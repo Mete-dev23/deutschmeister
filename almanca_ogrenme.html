@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeutschMeister — Almanca Öğrenme</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #151820; --surface2: #1c2030; --surface3: #232840;
+    --border: #2a3050; --gold: #e8b84b; --gold2: #f5d07a; --blue: #4a7cdc;
+    --blue2: #6b9bff; --green: #3dba7e; --red: #e05c5c; --text: #e8ecf5;
+    --text2: #8e99b8; --text3: #5a6480;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* SYNC BAR */
+  .sync-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 999;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    padding: 0 20px; font-size: 12px;
+  }
+  .sync-status { display: flex; align-items: center; gap: 6px; color: var(--text3); font-family: var(--font-mono); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+  .sync-dot.synced { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .sync-dot.syncing { background: var(--gold); animation: blink 1s infinite; }
+  .sync-dot.error { background: var(--red); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .sync-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+  .sync-btn:hover { background: var(--surface3); color: var(--text); }
+  .sync-btn.connected { border-color: var(--green); color: var(--green); }
+
+  /* AUTH OVERLAY */
+  .auth-overlay { position: fixed; inset: 0; background: rgba(13,15,20,0.97); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  .auth-overlay.hidden { display: none; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px 40px; max-width: 420px; width: 90%; text-align: center; }
+  .auth-logo { font-family: var(--font-display); font-size: 32px; color: var(--gold); margin-bottom: 8px; }
+  .auth-sub { font-size: 11px; color: var(--text3); margin-bottom: 28px; letter-spacing: 2px; text-transform: uppercase; }
+  .auth-desc { font-size: 14px; color: var(--text2); margin-bottom: 28px; line-height: 1.6; }
+  .google-btn { display: flex; align-items: center; justify-content: center; gap: 12px; background: white; color: #333; border: none; border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; font-family: var(--font-body); transition: opacity 0.15s; margin-bottom: 12px; }
+  .google-btn:hover { opacity: 0.9; }
+  .google-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .skip-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); border-radius: 12px; padding: 11px 24px; font-size: 13px; cursor: pointer; width: 100%; font-family: var(--font-body); transition: all 0.15s; }
+  .skip-btn:hover { border-color: var(--text3); color: var(--text2); }
+  .auth-note { font-size: 11px; color: var(--text3); margin-top: 18px; line-height: 1.6; }
+  .auth-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: 100vh; padding-top: 36px; }
+  .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 36px; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+  .logo { padding: 24px 24px 18px; border-bottom: 1px solid var(--border); }
+  .logo h1 { font-family: var(--font-display); font-size: 22px; color: var(--gold); letter-spacing: -0.5px; }
+  .logo p { font-size: 11px; color: var(--text3); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .user-chip { margin: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--bg); flex-shrink: 0; }
+  .user-name { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .user-email { font-size: 10px; color: var(--text3); }
+
+  .level-section { padding: 12px 14px 6px; }
+  .level-section h3 { font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding-left: 8px; }
+  .level-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; background: transparent; border: none; color: var(--text2); font-family: var(--font-body); font-size: 13px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.15s; }
+  .level-btn:hover { background: var(--surface2); color: var(--text); }
+  .level-btn.active { background: var(--surface3); color: var(--gold); }
+  .level-badge { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface3); color: var(--text3); min-width: 28px; text-align: center; }
+  .level-btn.active .level-badge { background: var(--gold); color: var(--bg); }
+  .level-progress-bar { flex: 1; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .level-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
+
+  .nav-section { padding: 12px 14px 6px; border-top: 1px solid var(--border); }
+  .nav-section h3 { font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding-left: 8px; }
+  .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; background: transparent; border: none; color: var(--text2); font-family: var(--font-body); font-size: 13px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.15s; }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--surface3); color: var(--blue2); }
+  .nav-icon { width: 18px; text-align: center; font-size: 15px; }
+
+  .sidebar-stats { margin-top: auto; padding: 14px; border-top: 1px solid var(--border); }
+  .streak-box { background: var(--surface2); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .streak-fire { font-size: 20px; }
+  .streak-info .val { font-family: var(--font-mono); font-size: 16px; color: var(--gold); }
+  .streak-info .lbl { font-size: 10px; color: var(--text3); }
+  .stat-row { display: flex; justify-content: space-between; margin-top: 10px; }
+  .stat-item { text-align: center; }
+  .stat-item .val { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--gold); }
+  .stat-item .lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  .main { margin-left: 260px; flex: 1; padding: 28px 32px; max-width: calc(100vw - 260px); }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+  .page-header h2 { font-family: var(--font-display); font-size: 28px; color: var(--text); letter-spacing: -1px; }
+  .page-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+  .header-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text2); font-family: var(--font-mono); white-space: nowrap; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 13px; margin-bottom: 20px; }
+  .ex-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .ex-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-accent, var(--blue)); }
+  .ex-card:hover { border-color: var(--card-accent, var(--blue)); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .ex-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .ex-card p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .ex-card .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .ex-card .tag { font-size: 11px; color: var(--text3); font-family: var(--font-mono); background: var(--surface2); padding: 3px 8px; border-radius: 4px; }
+  .ex-card .start-btn { background: var(--card-accent, var(--blue)); color: white; border: none; border-radius: 8px; padding: 6px 13px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font-body); transition: opacity 0.15s; }
+  .ex-card .start-btn:hover { opacity: 0.85; }
+
+  .exercise-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: none; }
+  .exercise-panel.active { display: block; }
+  .ex-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .ex-title { font-family: var(--font-display); font-size: 20px; }
+  .ex-close { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+  .ex-close:hover { background: var(--surface3); color: var(--text); }
+
+  .ex-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .ex-progress-bar { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .ex-progress-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s; }
+  .ex-progress-text { font-size: 12px; color: var(--text2); font-family: var(--font-mono); white-space: nowrap; }
+
+  .question-area { margin-bottom: 20px; }
+  .question-label { font-size: 11px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+  .question-text { font-size: 18px; font-weight: 500; color: var(--text); background: var(--surface2); border-radius: 10px; padding: 16px 18px; border-left: 3px solid var(--gold); line-height: 1.5; }
+  .question-hint { font-size: 12px; color: var(--text3); margin-top: 8px; font-style: italic; }
+
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .option-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); border-radius: 10px; padding: 13px 15px; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: all 0.15s; text-align: left; }
+  .option-btn:hover:not(:disabled) { border-color: var(--blue); background: var(--surface3); }
+  .option-btn.correct { border-color: var(--green); background: rgba(61,186,126,0.1); color: var(--green); }
+  .option-btn.wrong { border-color: var(--red); background: rgba(224,92,92,0.1); color: var(--red); }
+  .option-btn:disabled { cursor: default; }
+
+  .text-input-area { margin-bottom: 18px; }
+  .text-input { width: 100%; background: var(--surface2); border: 2px solid var(--border); color: var(--text); border-radius: 10px; padding: 13px 15px; font-size: 15px; font-family: var(--font-body); outline: none; transition: border-color 0.15s; resize: vertical; min-height: 80px; }
+  .text-input:focus { border-color: var(--blue); }
+
+  .word-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 13px; min-height: 48px; }
+  .word-chip { background: var(--surface3); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 13px; font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--font-body); }
+  .word-chip:hover { border-color: var(--blue); }
+  .word-chip.used { opacity: 0.3; cursor: default; pointer-events: none; }
+  .answer-slots { min-height: 50px; border: 2px dashed var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 7px; background: var(--surface2); cursor: pointer; }
+  .slots-hint { font-size: 11px; color: var(--text3); margin-bottom: 13px; }
+
+  .feedback-box { border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; display: none; animation: fadeIn 0.3s; }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct-fb { background: rgba(61,186,126,0.1); border: 1px solid var(--green); }
+  .feedback-box.wrong-fb { background: rgba(224,92,92,0.1); border: 1px solid var(--red); }
+  .feedback-box.ai-fb { background: rgba(74,124,220,0.1); border: 1px solid var(--blue); }
+  .feedback-header { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .feedback-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .feedback-body strong { color: var(--text); }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: none; } }
+
+  .ai-loading { display: none; align-items: center; gap: 10px; padding: 10px 0; color: var(--text2); font-size: 13px; }
+  .ai-loading.show { display: flex; }
+  .dot-pulse { display: flex; gap: 4px; }
+  .dot-pulse span { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: pulse 1.2s infinite; }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,60%,100% { opacity:0.3; transform: scale(0.8); } 30% { opacity:1; transform: scale(1); } }
+
+  .action-row { display: flex; gap: 10px; }
+  .btn-primary { background: var(--gold); color: var(--bg); border: none; border-radius: 10px; padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+  .btn-secondary:hover { background: var(--surface3); color: var(--text); }
+
+  .result-screen { text-align: center; padding: 36px 20px; display: none; }
+  .result-screen.show { display: block; }
+  .result-icon { font-size: 52px; margin-bottom: 14px; }
+  .result-score { font-family: var(--font-display); font-size: 60px; color: var(--gold); line-height: 1; margin-bottom: 8px; }
+  .result-label { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+  .result-breakdown { display: flex; justify-content: center; gap: 32px; margin-bottom: 28px; }
+  .result-stat .n { font-family: var(--font-mono); font-size: 22px; font-weight: 500; }
+  .result-stat .n.green { color: var(--green); }
+  .result-stat .n.red { color: var(--red); }
+  .result-stat .l { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  .progress-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stat-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .stat-card .number { font-family: var(--font-mono); font-size: 26px; font-weight: 500; color: var(--gold); }
+  .stat-card .desc { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 18px; background: var(--surface2); border-radius: 10px; padding: 4px; }
+  .tab { flex: 1; padding: 9px 12px; border: none; background: transparent; color: var(--text2); border-radius: 8px; cursor: pointer; font-family: var(--font-body); font-size: 13px; transition: all 0.15s; }
+  .tab.active { background: var(--surface3); color: var(--text); font-weight: 500; }
+
+  .flashcard { width: 100%; max-width: 380px; height: 185px; margin: 0 auto 22px; position: relative; transform-style: preserve-3d; transition: transform 0.5s; cursor: pointer; }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; backface-visibility: hidden; padding: 22px; border: 1px solid var(--border); }
+  .card-front { background: var(--surface); }
+  .card-back { background: var(--surface2); transform: rotateY(180deg); }
+  .card-word { font-family: var(--font-display); font-size: 28px; color: var(--text); }
+  .card-article { font-size: 13px; color: var(--gold); margin-top: 6px; font-family: var(--font-mono); }
+  .card-translation { font-size: 20px; color: var(--text2); }
+  .card-example { font-size: 12px; color: var(--text3); margin-top: 8px; font-style: italic; text-align: center; }
+  .card-flip-hint { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 14px; }
+
+  .topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; }
+  .topic-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; cursor: pointer; transition: all 0.15s; }
+  .topic-item:hover { border-color: var(--blue); background: var(--surface3); }
+  .topic-item.locked { opacity: 0.4; cursor: not-allowed; }
+  .topic-item.done { border-color: var(--green); }
+  .topic-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .topic-meta { font-size: 11px; color: var(--text3); }
+  .topic-status { font-size: 15px; float: right; }
+
+  .srs-badge { display: inline-block; font-size: 10px; font-family: var(--font-mono); padding: 2px 7px; border-radius: 4px; margin-left: 8px; }
+  .srs-new { background: rgba(74,124,220,0.2); color: var(--blue2); }
+  .srs-review { background: rgba(232,184,75,0.2); color: var(--gold); }
+  .srs-mastered { background: rgba(61,186,126,0.2); color: var(--green); }
+
+  .hl-gold { color: var(--gold); }
+  @media (max-width: 768px) { .sidebar { width: 220px; } .main { margin-left: 220px; padding: 18px; max-width: calc(100vw - 220px); } .options-grid { grid-template-columns: 1fr; } .progress-overview { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- SYNC BAR -->
+<div class="sync-bar">
+  <div class="sync-status">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Başlatılıyor...</span>
+  </div>
+  <button class="sync-btn" id="sync-btn" onclick="manualSync()">⟳ Kaydet</button>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">DeutschMeister</div>
+    <div class="auth-sub">Almanca Öğrenme Sistemi</div>
+    <div class="auth-desc">
+      İlerlemenin tüm cihazlarda senkronize olması için Google hesabınla giriş yap. Çalışmaların otomatik olarak Google Drive'a kaydedilir.
+    </div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Google ile Giriş Yap
+    </button>
+    <hr class="auth-divider">
+    <button class="skip-btn" onclick="skipAuth()">Şimdilik giriş yapmadan devam et (tarayıcıya kaydeder)</button>
+    <div class="auth-note">🔒 Yalnızca Drive'a dosya erişim izni istenir. Verilerini yalnızca sen görebilirsin. Reklam veya üçüncü taraf paylaşım yoktur.</div>
+  </div>
+</div>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">
+    <h1>DeutschMeister</h1>
+    <p>Almanca Öğrenme Sistemi</p>
+  </div>
+  <div class="user-chip" id="user-chip">
+    <div class="user-avatar" id="user-avatar">?</div>
+    <div>
+      <div class="user-name" id="user-name">Yükleniyor...</div>
+      <div class="user-email" id="user-email">—</div>
+    </div>
+  </div>
+
+  <div class="level-section">
+    <h3>Seviye</h3>
+    <button class="level-btn active" onclick="setLevel('A1',this)"><span class="level-badge">A1</span><span style="flex:1">Başlangıç</span><div class="level-progress-bar"><div class="level-progress-fill" id="prog-A1" style="width:0%"></div></div></button>
+    <button class="level-btn" onclick="setLevel('A2',this)"><span class="level-badge">A2</span><span style="flex:1">Temel</span><div class="level-progress-bar"><div class="level-progress-fill" id="prog-A2" style="width:0%"></div></div></button>
+    <button class="level-btn" onclick="setLevel('B1',this)"><span class="level-badge">B1</span><span style="flex:1">Orta</span><div class="level-progress-bar"><div class="level-progress-fill" id="prog-B1" style="width:0%"></div></div></button>
+    <button class="level-btn" onclick="setLevel('B2',this)"><span class="level-badge">B2</span><span style="flex:1">Orta-Üst</span><div class="level-progress-bar"><div class="level-progress-fill" id="prog-B2" style="width:0%"></div></div></button>
+    <button class="level-btn" onclick="setLevel('C1',this)"><span class="level-badge">C1</span><span style="flex:1">İleri</span><div class="level-progress-bar"><div class="level-progress-fill" id="prog-C1" style="width:0%"></div></div></button>
+  </div>
+
+  <div class="nav-section">
+    <h3>Menü</h3>
+    <button class="nav-btn active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> Ana Sayfa</button>
+    <button class="nav-btn" onclick="showPage('topics',this)"><span class="nav-icon">📚</span> Konular</button>
+    <button class="nav-btn" onclick="showPage('vocab',this)"><span class="nav-icon">🃏</span> Kelime Kartları</button>
+    <button class="nav-btn" onclick="showPage('progress',this)"><span class="nav-icon">📊</span> İlerleme</button>
+  </div>
+
+  <div class="sidebar-stats">
+    <div class="streak-box">
+      <span class="streak-fire">🔥</span>
+      <div class="streak-info"><div class="val" id="streak-val">0</div><div class="lbl">Gün serisi</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-item"><div class="val" id="stat-xp">0</div><div class="lbl">XP</div></div>
+      <div class="stat-item"><div class="val" id="stat-pct">—</div><div class="lbl">Doğruluk</div></div>
+      <div class="stat-item"><div class="val" id="stat-words">0</div><div class="lbl">Kelime</div></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- HOME -->
+  <div id="page-home">
+    <div class="page-header">
+      <div><h2>Merhaba! <span class="hl-gold">Bugün ne öğreniyoruz?</span></h2><p>Seviye: <strong id="current-level-display">A1 — Başlangıç</strong></p></div>
+      <span class="header-badge" id="today-badge">Bugün: 0/5 alıştırma</span>
+    </div>
+    <div class="exercise-panel" id="exercise-panel"><div id="ex-content"></div></div>
+    <div id="home-cards">
+      <div class="cards-grid">
+        <div class="ex-card" style="--card-accent:#e8b84b"><h3>📖 Gramer Alıştırması</h3><p>Fiil çekimleri, soru kelimeleri ve temel cümle yapısı.</p><div class="card-footer"><span class="tag">A1 Gramer</span><button class="start-btn" onclick="startExercise('grammar')">Başla →</button></div></div>
+        <div class="ex-card" style="--card-accent:#4a7cdc"><h3>🏷️ Artikel Alıştırması</h3><p>der, die, das — açıklamalı kurallarla birlikte öğren.</p><div class="card-footer"><span class="tag">A1 Artikel</span><button class="start-btn" onclick="startExercise('artikel')">Başla →</button></div></div>
+        <div class="ex-card" style="--card-accent:#3dba7e"><h3>💬 Cümle Kur</h3><p>Kelime sırası kurallarını uygula, doğru cümle kur.</p><div class="card-footer"><span class="tag">A1 Sözdizim</span><button class="start-btn" onclick="startExercise('sentence')">Başla →</button></div></div>
+        <div class="ex-card" style="--card-accent:#b854e0"><h3>✍️ Yazma Alıştırması</h3><p>Almanca yaz, anında AI geri bildirimi al.</p><div class="card-footer"><span class="tag">A1 Yazma</span><button class="start-btn" onclick="startExercise('writing')">Başla →</button></div></div>
+        <div class="ex-card" style="--card-accent:#e05c5c"><h3>📝 Mini Sınav</h3><p>Karma test ile seviyeni ölç ve ilerlemeyi kaydet.</p><div class="card-footer"><span class="tag">A1 Karma</span><button class="start-btn" onclick="startExercise('quiz')">Teste Gir →</button></div></div>
+        <div class="ex-card" style="--card-accent:#4ae0c0"><h3>🔁 Tekrar Gereken Kelimeler</h3><p>Spaced repetition ile tekrar zamanı gelen kelimeler.</p><div class="card-footer"><span class="tag" id="srs-count-tag">SRS · 0 kelime</span><button class="start-btn" onclick="startExercise('srs')">Tekrar Et →</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOPICS -->
+  <div id="page-topics" style="display:none">
+    <div class="page-header"><div><h2>Konular</h2><p id="topics-subtitle">A1 seviyesi tüm konular</p></div></div>
+    <div class="topics-grid" id="topics-grid"></div>
+  </div>
+
+  <!-- VOCAB -->
+  <div id="page-vocab" style="display:none">
+    <div class="page-header"><div><h2>Kelime Kartları</h2><p>Kelimeleri interaktif kartlarla öğren</p></div></div>
+    <div class="tabs">
+      <button class="tab active" onclick="setVocabTab('flashcard',this)">🃏 Flashcard</button>
+      <button class="tab" onclick="setVocabTab('list',this)">📋 Liste</button>
+    </div>
+    <div id="vocab-flashcard">
+      <p class="card-flip-hint">Kartı çevirmek için tıkla 👆</p>
+      <div style="perspective:800px">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="card-face card-front"><div class="card-word" id="fc-word">—</div><div class="card-article" id="fc-article">—</div></div>
+          <div class="card-face card-back"><div class="card-translation" id="fc-translation">—</div><div class="card-example" id="fc-example">—</div></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:12px">
+        <button class="btn-secondary" onclick="fcResult('again')">🔁 Tekrar</button>
+        <button class="btn-secondary" onclick="fcResult('hard')">😰 Zor</button>
+        <button class="btn-primary" onclick="fcResult('ok')">✓ Biliyorum</button>
+      </div>
+    </div>
+    <div id="vocab-list" style="display:none"><div id="vocab-list-items"></div></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="page-progress" style="display:none">
+    <div class="page-header"><div><h2>İlerleme Takibi</h2><p>Tüm çalışmalarının özeti</p></div></div>
+    <div class="progress-overview">
+      <div class="stat-card"><div class="icon">⚡</div><div class="number" id="pg-xp">0</div><div class="desc">Toplam XP</div></div>
+      <div class="stat-card"><div class="icon">✅</div><div class="number" id="pg-correct">—</div><div class="desc">Doğruluk Oranı</div></div>
+      <div class="stat-card"><div class="icon">📖</div><div class="number" id="pg-words">0</div><div class="desc">Öğrenilen Kelime</div></div>
+      <div class="stat-card"><div class="icon">🏋️</div><div class="number" id="pg-exercises">0</div><div class="desc">Tamamlanan Alıştırma</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">
+      <h3 style="margin-bottom:14px;font-size:15px">Seviye İlerlemesi</h3>
+      <div id="level-bars"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+      <h3 style="margin-bottom:14px;font-size:15px">Son Alıştırmalar</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// NOTE: To enable real Google Drive sync, replace this with your OAuth 2.0 client ID
+// from https://console.cloud.google.com (Web application, authorized for this domain)
+const GOOGLE_CLIENT_ID = ''; // Leave empty to use local-only mode
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const SAVE_KEY = 'dm_v2_progress';
+
+let accessToken = null;
+let driveFileId = null;
+let isGuest = false;
+let saveTimer = null;
+let tokenClient = null;
+
+// ── DEFAULT STATE ─────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  level:'A1', xp:0, streak:0, lastDate:null,
+  wordsLearned:0, todayEx:0, totalEx:0,
+  correct:0, total:0, fcIndex:0,
+  levelProgress:{A1:0,A2:0,B1:0,B2:0,C1:0},
+  topicsDone:[], history:[], vocab:null
+};
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+
+// runtime
+let curEx=null, qIdx=0, sesScore=0, sesTotal=0;
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const GRAMMAR_Q = [
+  {q:"Seç: ___ heißt du?",opts:["Wie","Was","Wer","Wo"],ans:0,exp:"<strong>Wie</strong>=nasıl · <em>Was</em>=ne · <em>Wer</em>=kim · <em>Wo</em>=nerede<br>'Wie heißt du?' → Adın ne?"},
+  {q:"Seç: ___ bist du?",opts:["Wo","Wer","Was","Wie"],ans:0,exp:"<strong>Wo</strong>=nerede · Woher=nereden · Wohin=nereye<br>'Wo bist du?' → Neredesin?"},
+  {q:"Doğru çekim: Ich ___ Student.",opts:["bin","bist","ist","sind"],ans:0,exp:"<strong>sein:</strong> ich <strong>bin</strong> · du bist · er/sie/es ist · wir sind · ihr seid · sie sind"},
+  {q:"Doğru çekim: Du ___ sehr nett.",opts:["bin","bist","ist","sind"],ans:1,exp:"<strong>du bist</strong>=sen …-sin. 'Du bist sehr nett.' → Sen çok naziksin."},
+  {q:"Doğru çekim: Er ___ aus Deutschland.",opts:["komme","kommst","kommt","kommen"],ans:2,exp:"<strong>kommen:</strong> ich komme · du kommst · er/sie/es <strong>kommt</strong> · wir kommen"},
+  {q:"Olumsuz cümle: Ich ___ müde.",opts:["kein","nicht","nein","no"],ans:1,exp:"<strong>nicht</strong> fiil/sıfatı olumsuzlar. <strong>kein</strong> isim önünde kullanılır: Ich habe kein Auto."},
+  {q:"Hangi cümle doğrudur?",opts:["Ich heiße Maria.","Ich heißt Maria.","Ich heißen Maria.","Ich heiß Maria."],ans:0,exp:"<strong>heißen:</strong> ich <strong>heiße</strong> · du heißt · er/sie/es heißt"},
+  {q:"Olumsuz soruya evet demek için:",opts:["Ja","Nein","Doch","Bitte"],ans:2,exp:"<strong>Doch!</strong> olumsuz soruya olumlu yanıt.<br>'Kommst du nicht?' → 'Doch!' (Hayır, geliyorum!)"}
+];
+const ARTIKEL_Q = [
+  {word:"Haus",art:"das",tr:"ev",exp:"<strong>das Haus</strong> — nötr. -chen/-lein ekleri her zaman <em>das</em> alır. das Häuschen=küçük ev"},
+  {word:"Mann",art:"der",tr:"adam/erkek",exp:"<strong>der Mann</strong> — erkek canlılar genelde <em>der</em>: der Vater, der Bruder, der Sohn"},
+  {word:"Frau",art:"die",tr:"kadın/bayan",exp:"<strong>die Frau</strong> — kadın canlılar genelde <em>die</em>: die Mutter, die Schwester"},
+  {word:"Kind",art:"das",tr:"çocuk",exp:"<strong>das Kind</strong> — çocuk nötr! das Mädchen da nötr (-chen ekinden)."},
+  {word:"Buch",art:"das",tr:"kitap",exp:"<strong>das Buch</strong> — eğitim nesneleri çoğunlukla nötr: das Heft, das Blatt"},
+  {word:"Schule",art:"die",tr:"okul",exp:"<strong>die Schule</strong> — -e biten pek çok kelime dişil: die Straße, die Sprache, die Küche"},
+  {word:"Tisch",art:"der",tr:"masa",exp:"<strong>der Tisch</strong> — mobilyanın çoğu eril: der Stuhl (sandalye), der Schrank (dolap)"},
+  {word:"Auto",art:"das",tr:"araba",exp:"<strong>das Auto</strong> — -o biten yabancı kökenli kelimeler nötr: das Radio, das Kino, das Büro"}
+];
+const SENTENCE_Q = [
+  {words:["Ich","heiße","Thomas","."],correct:"Ich heiße Thomas.",tr:"Adım Thomas."},
+  {words:["Woher","kommst","du","?"],correct:"Woher kommst du?",tr:"Sen nereden geliyorsun?"},
+  {words:["Ich","bin","müde","nicht","."],correct:"Ich bin nicht müde.",tr:"Ben yorgun değilim.",hint:"nicht genellikle sona yakın gelir"},
+  {words:["Das","Haus","groß","ist","."],correct:"Das Haus ist groß.",tr:"Ev büyük.",hint:"Ana cümlede fiil 2. konumdadır"},
+  {words:["Er","aus","kommt","Berlin","."],correct:"Er kommt aus Berlin.",tr:"O Berlin'den geliyor.",hint:"Fiil daima 2. konumda olmalı"}
+];
+const VOCAB_DEFAULT = [
+  {word:"das Haus",tr:"ev",art:"das (nötr)",ex:"Das Haus ist groß.\nEv büyük.",srs:0},
+  {word:"der Mann",tr:"adam, erkek",art:"der (eril)",ex:"Der Mann ist nett.\nAdam nazik.",srs:0},
+  {word:"die Frau",tr:"kadın",art:"die (dişil)",ex:"Die Frau arbeitet hier.\nKadın burada çalışıyor.",srs:0},
+  {word:"das Kind",tr:"çocuk",art:"das (nötr)",ex:"Das Kind spielt.\nÇocuk oynuyor.",srs:0},
+  {word:"gut",tr:"iyi, güzel",art:"—",ex:"Das ist gut!\nBu iyi!",srs:0},
+  {word:"groß",tr:"büyük, uzun boylu",art:"—",ex:"Er ist sehr groß.\nO çok uzun boylu.",srs:0},
+  {word:"klein",tr:"küçük",art:"—",ex:"Das ist klein.\nBu küçük.",srs:0},
+  {word:"die Schule",tr:"okul",art:"die (dişil)",ex:"Ich gehe in die Schule.\nOkula gidiyorum.",srs:0}
+];
+const TOPICS = [
+  {key:"begr",name:"Begrüßung & Abschied",tr:"Selam & Veda",icon:"👋"},
+  {key:"zahl",name:"Zahlen 1–100",tr:"Sayılar 1–100",icon:"🔢"},
+  {key:"farb",name:"Farben",tr:"Renkler",icon:"🎨"},
+  {key:"fami",name:"Familie",tr:"Aile",icon:"👨‍👩‍👧"},
+  {key:"beru",name:"Berufe",tr:"Meslekler",icon:"💼"},
+  {key:"sein",name:"sein & haben",tr:"Olmak & Sahip Olmak",icon:"⚙️"},
+  {key:"esse",name:"Essen & Trinken",tr:"Yemek & İçmek",icon:"🍽️",locked:true},
+  {key:"woch",name:"Wochentage",tr:"Haftanın Günleri",icon:"📅",locked:true}
+];
+
+// ── SYNC STATUS ───────────────────────────────────────────────────────────────
+function setSyncStatus(state, msg) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  document.getElementById('sync-label').textContent = msg;
+}
+
+// ── GOOGLE DRIVE SYNC ─────────────────────────────────────────────────────────
+function initGoogleAuth() {
+  if (!GOOGLE_CLIENT_ID || typeof google === 'undefined') return;
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE,
+      callback: async (resp) => {
+        if (resp.error) { setSyncStatus('error','Google hatası'); return; }
+        accessToken = resp.access_token;
+        document.getElementById('user-email').textContent = 'Google Drive bağlı ✓';
+        document.getElementById('sync-btn').classList.add('connected');
+        document.getElementById('auth-overlay').classList.add('hidden');
+        setSyncStatus('syncing','Drive yükleniyor...');
+        await loadFromDrive();
+        updateUI(); loadFC();
+      }
+    });
+  } catch(e) {}
+}
+
+function signInWithGoogle() {
+  if (tokenClient) { tokenClient.requestAccessToken(); return; }
+  // Fallback: use localStorage but show Google branding
+  skipAuth(true);
+}
+
+function skipAuth(fromGoogle=false) {
+  isGuest = !fromGoogle;
+  document.getElementById('auth-overlay').classList.add('hidden');
+  if (!fromGoogle) {
+    setSyncStatus('error','Misafir modu — yalnızca tarayıcıya kaydediliyor');
+    document.getElementById('user-name').textContent = 'Misafir';
+    document.getElementById('user-email').textContent = 'Tarayıcıya kaydediliyor';
+  }
+  loadLocal(); updateUI(); loadFC();
+}
+
+async function loadFromDrive() {
+  if (!accessToken) { loadLocal(); return; }
+  try {
+    // Search for existing file
+    const searchRes = await fetch(
+      "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='"+encodeURIComponent('deutschmeister_v2.json')+"'",
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+      driveFileId = searchData.files[0].id;
+      const fileRes = await fetch(
+        "https://www.googleapis.com/drive/v3/files/" + driveFileId + "?alt=media",
+        { headers: { Authorization: 'Bearer ' + accessToken } }
+      );
+      const saved = await fileRes.json();
+      S = { ...DEFAULTS, ...saved };
+      if (!S.vocab) S.vocab = JSON.parse(JSON.stringify(VOCAB_DEFAULT));
+      setSyncStatus('synced','Drive\'dan yüklendi · ' + now());
+    } else {
+      loadLocal();
+      setSyncStatus('synced','İlk kez başlıyorsun! Hoş geldin 🎉');
+    }
+  } catch(e) { loadLocal(); setSyncStatus('error','Drive yüklenemedi, yerel kullanılıyor'); }
+}
+
+async function saveToDrive() {
+  if (!accessToken) { saveLocal(); return; }
+  setSyncStatus('syncing','Kaydediliyor...');
+  const body = JSON.stringify(S);
+  try {
+    if (driveFileId) {
+      await fetch("https://www.googleapis.com/upload/drive/v3/files/"+driveFileId+"?uploadType=media", {
+        method:'PATCH', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body
+      });
+    } else {
+      const meta = await fetch("https://www.googleapis.com/drive/v3/files", {
+        method:'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+        body: JSON.stringify({name:'deutschmeister_v2.json',parents:['appDataFolder']})
+      });
+      const metaData = await meta.json();
+      driveFileId = metaData.id;
+      await fetch("https://www.googleapis.com/upload/drive/v3/files/"+driveFileId+"?uploadType=media", {
+        method:'PATCH', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body
+      });
+    }
+    saveLocal(); // also keep local copy
+    setSyncStatus('synced','Drive\'a kaydedildi · ' + now());
+    document.getElementById('sync-btn').classList.add('connected');
+  } catch(e) { saveLocal(); setSyncStatus('error','Drive kaydedilemedi, yerel kopyalandı'); }
+}
+
+function saveLocal() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) { S = { ...DEFAULTS, ...JSON.parse(raw) }; }
+    if (!S.vocab) S.vocab = JSON.parse(JSON.stringify(VOCAB_DEFAULT));
+    if (!isGuest) setSyncStatus('synced','Yerel kayıt yüklendi · ' + now());
+  } catch(e) {
+    S.vocab = JSON.parse(JSON.stringify(VOCAB_DEFAULT));
+  }
+}
+
+function manualSync() { save(); }
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (accessToken) saveToDrive(); else saveLocal(); setSyncStatus('synced','Kaydedildi · '+now()); }, 800); }
+function now() { return new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}); }
+
+// ── STREAK ────────────────────────────────────────────────────────────────────
+function checkStreak() {
+  const today = new Date().toDateString();
+  if (S.lastDate !== today) {
+    const yest = new Date(Date.now()-86400000).toDateString();
+    S.streak = (S.lastDate===yest) ? S.streak+1 : 1;
+    S.lastDate = today; S.todayEx = 0;
+  }
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+function updateUI() {
+  document.getElementById('stat-xp').textContent = S.xp;
+  document.getElementById('streak-val').textContent = S.streak;
+  document.getElementById('stat-words').textContent = S.wordsLearned;
+  const pct = S.total>0 ? Math.round((S.correct/S.total)*100)+'%':'—';
+  document.getElementById('stat-pct').textContent = pct;
+  document.getElementById('today-badge').textContent = `Bugün: ${S.todayEx}/5 alıştırma`;
+  ['A1','A2','B1','B2','C1'].forEach(l => {
+    const el = document.getElementById('prog-'+l);
+    if (el) el.style.width = (S.levelProgress[l]||0)+'%';
+  });
+  const due = (S.vocab||[]).filter(w=>w.srs<2).length;
+  document.getElementById('srs-count-tag').textContent = `SRS · ${due} kelime`;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(p, btn) {
+  ['home','topics','vocab','progress'].forEach(id=>{document.getElementById('page-'+id).style.display=id===p?'block':'none';});
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(p==='topics') renderTopics();
+  if(p==='vocab') { loadFC(); renderVocabList(); }
+  if(p==='progress') renderProgress();
+}
+function setLevel(lvl, btn) {
+  S.level=lvl;
+  document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('current-level-display').textContent = {A1:'A1 — Başlangıç',A2:'A2 — Temel',B1:'B1 — Orta',B2:'B2 — Orta-Üst',C1:'C1 — İleri'}[lvl];
+  closeExercise(); save();
+}
+
+// ── EXERCISES ─────────────────────────────────────────────────────────────────
+function startExercise(type) {
+  curEx=type; qIdx=0; sesScore=0; sesTotal=0;
+  checkStreak();
+  document.getElementById('home-cards').style.display='none';
+  document.getElementById('exercise-panel').style.display='block';
+  renderQ();
+}
+function closeExercise() {
+  document.getElementById('home-cards').style.display='block';
+  document.getElementById('exercise-panel').style.display='none';
+  curEx=null;
+}
+
+function getQs() {
+  if (curEx==='grammar'||curEx==='quiz') return GRAMMAR_Q;
+  if (curEx==='artikel') return ARTIKEL_Q.map(a=>({q:`Bu kelimenin artikelini seç: <span style="color:var(--gold);font-weight:600">${a.word}</span> <span style="color:var(--text3);font-size:13px">(${a.tr})</span>`,opts:['der','die','das'],ans:['der','die','das'].indexOf(a.art),exp:a.exp}));
+  return [];
+}
+
+function renderQ() {
+  if (curEx==='sentence') { renderSentenceQ(); return; }
+  if (curEx==='writing') { renderWritingQ(); return; }
+  if (curEx==='srs') { renderSRSQ(); return; }
+  const qs=getQs(), total=Math.min(qs.length,6);
+  if (qIdx>=total) { showResult(total); return; }
+  const q=qs[qIdx];
+  const titles={grammar:'📖 Gramer',artikel:'🏷️ Artikel',quiz:'📝 Mini Sınav'};
+  document.getElementById('ex-content').innerHTML=`
+    <div class="ex-topbar"><div class="ex-title">${titles[curEx]||'Alıştırma'}</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+    <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${(qIdx/total)*100}%"></div></div><span class="ex-progress-text">${qIdx+1} / ${total}</span></div>
+    <div class="question-area"><div class="question-label">Soru ${qIdx+1}</div><div class="question-text">${q.q}</div></div>
+    <div class="options-grid" id="opts"></div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="action-row" id="action-row" style="display:none"><button class="btn-primary" onclick="nextQ()">Sonraki →</button></div>`;
+  const expEsc=encodeURIComponent(q.exp||'');
+  q.opts.forEach((opt,i)=>{document.getElementById('opts').innerHTML+=`<button class="option-btn" onclick="checkMCQ(${i},${q.ans},'${expEsc}')">${opt}</button>`;});
+}
+
+function checkMCQ(chosen,correct,expEnc) {
+  const exp=decodeURIComponent(expEnc);
+  document.querySelectorAll('.option-btn').forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct');else if(i===chosen&&chosen!==correct)b.classList.add('wrong');});
+  const ok=chosen===correct;
+  if(ok){sesScore++;S.xp+=10;S.correct++;}
+  S.total++;sesTotal++;
+  document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
+  document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Doğru!':'❌ Yanlış!'}</div><div class="feedback-body">${exp}</div>`;
+  document.getElementById('action-row').style.display='flex';
+  updateUI(); save();
+}
+
+function renderSentenceQ() {
+  const total=SENTENCE_Q.length;
+  if(qIdx>=total){showResult(total);return;}
+  const q=SENTENCE_Q[qIdx];
+  window._ss=[];
+  window._sh=[...q.words].sort(()=>Math.random()-0.5);
+  drawSent(q);
+}
+function drawSent(q) {
+  const sel=window._ss||[];
+  document.getElementById('ex-content').innerHTML=`
+    <div class="ex-topbar"><div class="ex-title">💬 Cümle Kur</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+    <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${(qIdx/SENTENCE_Q.length)*100}%"></div></div><span class="ex-progress-text">${qIdx+1}/${SENTENCE_Q.length}</span></div>
+    <div class="question-area"><div class="question-label">Almanca'ya çevir</div><div class="question-text">${q.tr}</div>${q.hint?`<div class="question-hint">💡 ${q.hint}</div>`:''}</div>
+    <div class="answer-slots" onclick="removeLast()" style="min-height:52px">${sel.map(w=>`<span class="word-chip">${w}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">Kelimelere tıkla →</span>'}</div>
+    <div class="slots-hint">Cevap alanına tıklayarak son kelimeyi geri al</div>
+    <div class="word-pool">${(window._sh||[]).map(w=>`<button class="word-chip" onclick="addW('${w}')">${w}</button>`).join('')}</div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="action-row"><button class="btn-primary" onclick="checkSent('${q.correct}','${q.tr}')">Kontrol Et</button><button class="btn-secondary" onclick="clearSent()">Temizle</button></div>`;
+}
+window.addW=w=>{window._ss=window._ss||[];window._ss.push(w);drawSent(SENTENCE_Q[qIdx]);};
+window.removeLast=()=>{if(window._ss&&window._ss.length){window._ss.pop();drawSent(SENTENCE_Q[qIdx]);}};
+window.clearSent=()=>{window._ss=[];drawSent(SENTENCE_Q[qIdx]);};
+window.checkSent=(correct,tr)=>{
+  const built=(window._ss||[]).join(' ');const ok=built===correct;
+  if(ok){sesScore++;S.xp+=15;S.correct++;}S.total++;sesTotal++;
+  document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
+  document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Mükemmel!':'❌ Yanlış sıralama'}</div><div class="feedback-body">${ok?'Doğru!':'Doğru cümle: <strong>'+correct+'</strong>'}<br>Türkçesi: <em>${tr}</em></div>`;
+  document.querySelector('.action-row').innerHTML=`<button class="btn-primary" onclick="nextQ()">Sonraki →</button>`;
+  updateUI();save();
+};
+
+function renderWritingQ() {
+  const prompts=[
+    {p:"Kendini kısaca tanıt. (İsim, nereden olduğun, kaç yaşında olduğun)",hint:"Ich heiße... / Ich komme aus... / Ich bin ... Jahre alt."},
+    {p:"Favori rengin ne? Neden seviyorsun?",hint:"Meine Lieblingsfarbe ist... / Ich mag..."},
+    {p:"Ailenden birisini tanıt.",hint:"Das ist mein/meine... / Er/Sie heißt... / Er/Sie ist..."}
+  ];
+  const q=prompts[qIdx%prompts.length];
+  window._wp=q.p;
+  document.getElementById('ex-content').innerHTML=`
+    <div class="ex-topbar"><div class="ex-title">✍️ Yazma Alıştırması</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+    <div class="question-area"><div class="question-label">Almanca yaz</div><div class="question-text">${q.p}</div><div class="question-hint">💡 İpucu: ${q.hint}</div></div>
+    <div class="text-input-area"><textarea class="text-input" id="wi" placeholder="Almanca cümlenizi buraya yazın..." rows="4"></textarea></div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ai-loading" id="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div> AI değerlendiriyor...</div>
+    <div class="action-row"><button class="btn-primary" id="ws" onclick="checkWriting()">AI'ya Gönder ✨</button><button class="btn-secondary" onclick="nextQ()">Atla →</button></div>`;
+}
+window.checkWriting=async()=>{
+  const text=document.getElementById('wi').value.trim();if(!text)return;
+  document.getElementById('ai-loading').classList.add('show');
+  document.getElementById('ws').disabled=true;
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",max_tokens:700,
+      system:`Sen bir Almanca öğretmenisin. Öğrenci A1 seviyesinde, Türkçe konuşuyor. Kısa ve yapıcı Türkçe geri bildirim ver. Şu formatı kullan (sadece bu):
+PUAN: X/10
+✅ DOĞRU: ...
+⚠️ HATALAR: ...
+💡 ÖNERİ: ...
+📝 DÜZELTİLMİŞ: ...`,
+      messages:[{role:"user",content:`Konu: "${window._wp}"\nÖğrenci yazdı:\n${text}`}]
+    })});
+    const d=await res.json();
+    const txt=d.content?.[0]?.text||'Değerlendirme alınamadı.';
+    document.getElementById('ai-loading').classList.remove('show');
+    document.getElementById('feedback').className='feedback-box show ai-fb';
+    document.getElementById('feedback').innerHTML=`<div class="feedback-header">🤖 AI Değerlendirmesi</div><div class="feedback-body" style="white-space:pre-line">${txt}</div>`;
+    S.xp+=20;S.total++;sesTotal++;updateUI();save();
+    const ws=document.getElementById('ws');ws.textContent='Sonraki →';ws.onclick=nextQ;ws.disabled=false;
+  } catch(e) {
+    document.getElementById('ai-loading').classList.remove('show');
+    document.getElementById('feedback').className='feedback-box show wrong-fb';
+    document.getElementById('feedback').innerHTML='<div class="feedback-header">⚠️ Hata</div><div class="feedback-body">AI bağlantısı kurulamadı.</div>';
+    document.getElementById('ws').disabled=false;
+  }
+};
+
+function renderSRSQ() {
+  const vocab=S.vocab||VOCAB_DEFAULT,due=vocab.filter(w=>w.srs<2);
+  if(qIdx>=due.length||!due.length){showResult(Math.max(due.length,1));return;}
+  const v=due[qIdx];
+  let opts=vocab.filter(w=>w.word!==v.word).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.tr);
+  opts.push(v.tr);opts.sort(()=>Math.random()-0.5);
+  const correct=opts.indexOf(v.tr);
+  document.getElementById('ex-content').innerHTML=`
+    <div class="ex-topbar"><div class="ex-title">🔁 SRS Tekrar</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+    <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${(qIdx/due.length)*100}%"></div></div><span class="ex-progress-text">${qIdx+1}/${due.length}</span></div>
+    <div class="question-area"><div class="question-label">Türkçe anlamı nedir?</div><div class="question-text" style="text-align:center;font-size:26px;font-family:var(--font-display)">${v.word}</div></div>
+    <div class="options-grid" id="opts"></div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="action-row" id="action-row" style="display:none"><button class="btn-primary" onclick="nextQ()">Sonraki →</button></div>`;
+  const wi=vocab.findIndex(x=>x.word===v.word);
+  opts.forEach((opt,i)=>{document.getElementById('opts').innerHTML+=`<button class="option-btn" onclick="checkSRS(${i},${correct},${wi})">${opt}</button>`;});
+}
+window.checkSRS=(chosen,correct,wi)=>{
+  document.querySelectorAll('.option-btn').forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct');else if(i===chosen&&chosen!==correct)b.classList.add('wrong');});
+  const ok=chosen===correct,vocab=S.vocab||VOCAB_DEFAULT,v=vocab[wi];
+  if(v){v.srs=Math.min((v.srs||0)+(ok?1:0),3);if(ok&&v.srs>=2)S.wordsLearned=Math.min(S.wordsLearned+1,vocab.length);}
+  if(ok){sesScore++;S.xp+=8;S.correct++;}S.total++;sesTotal++;
+  document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
+  document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Doğru!':'❌ Yanlış!'}</div><div class="feedback-body">${v?v.word+' = <strong>'+v.tr+'</strong><br><em>'+(v.ex||'').split('\n')[0]+'</em>':''}</div>`;
+  document.getElementById('action-row').style.display='flex';
+  updateUI();save();
+};
+
+function nextQ(){qIdx++;renderQ();}
+
+function showResult(total) {
+  const pct=total>0?Math.round((sesScore/total)*100):0;
+  S.totalEx++;S.todayEx++;
+  S.levelProgress[S.level]=Math.min(100,(S.levelProgress[S.level]||0)+Math.round(pct/10));
+  document.getElementById('prog-'+S.level).style.width=S.levelProgress[S.level]+'%';
+  S.history=S.history||[];
+  const typeNames={grammar:'📖 Gramer',artikel:'🏷️ Artikel',sentence:'💬 Cümle Kur',writing:'✍️ Yazma',quiz:'📝 Sınav',srs:'🔁 SRS'};
+  S.history.unshift({type:curEx,score:pct,date:new Date().toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),level:S.level,label:typeNames[curEx]||curEx});
+  if(S.history.length>20)S.history=S.history.slice(0,20);
+  document.getElementById('ex-content').innerHTML=`
+    <div class="result-screen show">
+      <div class="result-icon">${pct>=80?'🏆':pct>=60?'👍':'💪'}</div>
+      <div class="result-score">${pct}%</div>
+      <div class="result-label">${pct>=80?'Harika! Mükemmel bir çalışma.':pct>=60?'İyi iş! Biraz daha pratik yapabilirsin.':'Devam et! Tekrar çalışmak seni geliştirecek.'}</div>
+      <div class="result-breakdown">
+        <div class="result-stat"><div class="n green">${sesScore}</div><div class="l">Doğru</div></div>
+        <div class="result-stat"><div class="n red">${total-sesScore}</div><div class="l">Yanlış</div></div>
+        <div class="result-stat"><div class="n">${S.xp} XP</div><div class="l">Toplam XP</div></div>
+      </div>
+      <div class="action-row" style="justify-content:center;gap:12px">
+        <button class="btn-secondary" onclick="startExercise('${curEx||'grammar'}')">🔁 Tekrar</button>
+        <button class="btn-primary" onclick="closeExercise()">Ana Menüye Dön</button>
+      </div>
+    </div>`;
+  updateUI();save();
+}
+
+// ── FLASHCARD ─────────────────────────────────────────────────────────────────
+function loadFC() {
+  const vocab=S.vocab||VOCAB_DEFAULT;if(!vocab.length)return;
+  const v=vocab[S.fcIndex%vocab.length];
+  document.getElementById('fc-word').textContent=v.word;
+  document.getElementById('fc-article').textContent=v.art;
+  document.getElementById('fc-translation').textContent=v.tr;
+  document.getElementById('fc-example').innerHTML=(v.ex||'').replace('\n','<br>');
+  document.getElementById('flashcard').classList.remove('flipped');
+}
+function flipCard(){document.getElementById('flashcard').classList.toggle('flipped');}
+function fcResult(r) {
+  const vocab=S.vocab||VOCAB_DEFAULT,v=vocab[S.fcIndex%vocab.length];
+  if(r==='ok'&&v){v.srs=Math.min((v.srs||0)+1,3);if(v.srs>=2)S.wordsLearned=Math.min(S.wordsLearned+1,vocab.length);S.xp+=5;}
+  S.fcIndex++;loadFC();updateUI();save();
+}
+function setVocabTab(t,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  document.getElementById('vocab-flashcard').style.display=t==='flashcard'?'block':'none';
+  document.getElementById('vocab-list').style.display=t==='list'?'block':'none';
+  if(t==='list')renderVocabList();
+}
+function renderVocabList(){
+  const c=document.getElementById('vocab-list-items');if(!c)return;
+  c.innerHTML=(S.vocab||VOCAB_DEFAULT).map(v=>{
+    const b=v.srs>=2?'<span class="srs-badge srs-mastered">Öğrenildi</span>':v.srs===1?'<span class="srs-badge srs-review">Tekrar</span>':'<span class="srs-badge srs-new">Yeni</span>';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface2);border-radius:10px;margin-bottom:8px;border:1px solid var(--border)"><div><span style="font-size:14px;font-weight:500">${v.word}</span>${b}<div style="font-size:12px;color:var(--text3);margin-top:3px">${v.tr}</div></div><div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${v.art}</div></div>`;
+  }).join('');
+}
+
+// ── TOPICS & PROGRESS ─────────────────────────────────────────────────────────
+function renderTopics(){
+  document.getElementById('topics-subtitle').textContent=S.level+' seviyesi tüm konular';
+  document.getElementById('topics-grid').innerHTML=TOPICS.map(t=>{
+    const done=(S.topicsDone||[]).includes(t.key);
+    return `<div class="topic-item ${done?'done':''} ${t.locked?'locked':''}" title="${t.locked?'Önceki konuları tamamla':''}"><span class="topic-status">${done?'✅':t.locked?'🔒':'⬜'}</span><div class="topic-name">${t.icon} ${t.tr}</div><div class="topic-meta">${t.name} · ${done?'Tamamlandı':t.locked?'Kilitli':'Çalışılmadı'}</div></div>`;
+  }).join('');
+}
+function renderProgress(){
+  document.getElementById('pg-xp').textContent=S.xp;
+  document.getElementById('pg-words').textContent=S.wordsLearned;
+  document.getElementById('pg-exercises').textContent=S.totalEx;
+  document.getElementById('pg-correct').textContent=S.total>0?Math.round((S.correct/S.total)*100)+'%':'—';
+  const lvls=['A1','A2','B1','B2','C1'],cols=['#e8b84b','#4a7cdc','#3dba7e','#b854e0','#e05c5c'];
+  document.getElementById('level-bars').innerHTML=lvls.map((l,i)=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:500">${l}</span><span style="font-family:var(--font-mono);font-size:12px;color:var(--text3)">${S.levelProgress[l]||0}%</span></div><div style="height:7px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="height:100%;width:${S.levelProgress[l]||0}%;background:${cols[i]};border-radius:4px;transition:width 0.8s"></div></div></div>`).join('');
+  const hist=S.history||[];
+  document.getElementById('history-list').innerHTML=hist.length===0?'<p style="color:var(--text3);font-size:13px">Henüz tamamlanan alıştırma yok.</p>':hist.map(h=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:10px;margin-bottom:8px;border:1px solid var(--border)"><div><div style="font-size:13px;font-weight:500">${h.label||h.type}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${h.date} · ${h.level}</div></div><div style="font-family:var(--font-mono);font-size:15px;color:${h.score>=80?'var(--green)':h.score>=60?'var(--gold)':'var(--red)'}">${h.score}%</div></div>`).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Try to load from localStorage first
+  loadLocal();
+  updateUI(); loadFC();
+  // If there's a saved session, skip auth overlay
+  if (localStorage.getItem(SAVE_KEY)) {
+    document.getElementById('auth-overlay').classList.add('hidden');
+    setSyncStatus('synced', 'Yerel kayıt yüklendi · ' + now());
+    document.getElementById('user-name').textContent = 'Hoş geldin!';
+    document.getElementById('user-email').textContent = 'Drive için giriş yap →';
+    document.getElementById('sync-btn').onclick = () => { document.getElementById('auth-overlay').classList.remove('hidden'); };
+    document.getElementById('sync-btn').textContent = '☁ Drive';
+  } else {
+    setSyncStatus('error', 'Bağlantı bekleniyor');
+  }
+  // Initialize Google auth if client ID provided
+  setTimeout(() => { try { initGoogleAuth(); } catch(e) {} }, 1000);
+});
+</script>
+</body>
+</html>
