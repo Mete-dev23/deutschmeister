@@ -366,7 +366,7 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // NOTE: To enable real Google Drive sync, replace this with your OAuth 2.0 client ID
 // from https://console.cloud.google.com (Web application, authorized for this domain)
-const GOOGLE_CLIENT_ID = ''; // Leave empty to use local-only mode
+const GOOGLE_CLIENT_ID = '885925216972-0smpc4bqln6vj6pq142tv57bp2ta54mo.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const SAVE_KEY = 'dm_v2_progress';
 
@@ -449,25 +449,44 @@ function initGoogleAuth() {
   if (!GOOGLE_CLIENT_ID || typeof google === 'undefined') return;
   try {
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE,
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
       callback: async (resp) => {
-        if (resp.error) { setSyncStatus('error','Google hatası'); return; }
+        if (resp.error) { setSyncStatus('error', 'Google hatası: ' + resp.error); return; }
         accessToken = resp.access_token;
-        document.getElementById('user-email').textContent = 'Google Drive bağlı ✓';
+        // Try to get user info
+        try {
+          const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + accessToken } });
+          const uData = await uRes.json();
+          document.getElementById('user-name').textContent = uData.name || 'Kullanıcı';
+          document.getElementById('user-email').textContent = uData.email || 'Drive bağlı ✓';
+          document.getElementById('user-avatar').textContent = (uData.name||'?')[0].toUpperCase();
+        } catch(e) {
+          document.getElementById('user-name').textContent = 'Google Kullanıcı';
+          document.getElementById('user-email').textContent = 'Drive bağlı ✓';
+        }
         document.getElementById('sync-btn').classList.add('connected');
         document.getElementById('auth-overlay').classList.add('hidden');
-        setSyncStatus('syncing','Drive yükleniyor...');
+        setSyncStatus('syncing', 'Drive yükleniyor...');
         await loadFromDrive();
         updateUI(); loadFC();
       }
     });
-  } catch(e) {}
+  } catch(e) { console.error('Google auth init error:', e); }
 }
 
 function signInWithGoogle() {
-  if (tokenClient) { tokenClient.requestAccessToken(); return; }
-  // Fallback: use localStorage but show Google branding
-  skipAuth(true);
+  if (tokenClient) {
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+    return;
+  }
+  // Google script not loaded yet, retry
+  setSyncStatus('syncing', 'Google yükleniyor...');
+  setTimeout(() => {
+    initGoogleAuth();
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
+    else skipAuth(false);
+  }, 1500);
 }
 
 function skipAuth(fromGoogle=false) {
