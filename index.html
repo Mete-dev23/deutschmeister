@@ -275,6 +275,7 @@
     <button class="nav-btn" onclick="showPage('topics',this)"><span class="nav-icon">📚</span> Konular</button>
     <button class="nav-btn" onclick="showPage('vocab',this)"><span class="nav-icon">🃏</span> Kelime Kartları</button>
     <button class="nav-btn" onclick="showPage('progress',this)"><span class="nav-icon">📊</span> İlerleme</button>
+    <button class="nav-btn" onclick="showPage('summary',this)"><span class="nav-icon">🧠</span> Analiz & Tavsiye</button>
   </div>
 
   <div class="sidebar-stats">
@@ -358,6 +359,46 @@
       <div id="history-list"></div>
     </div>
   </div>
+  <!-- SUMMARY / ANALİZ -->
+  <div id="page-summary" style="display:none">
+    <div class="page-header">
+      <div><h2>Analiz & Tavsiye</h2><p>Güçlü ve zayıf yönlerin, kişisel öneriler</p></div>
+    </div>
+    <!-- Genel skor kartları -->
+    <div class="progress-overview" style="margin-bottom:20px">
+      <div class="stat-card"><div class="icon">🎯</div><div class="number" id="sm-accuracy">—</div><div class="desc">Genel Doğruluk</div></div>
+      <div class="stat-card"><div class="icon">🔥</div><div class="number" id="sm-streak">0</div><div class="desc">Gün Serisi</div></div>
+      <div class="stat-card"><div class="icon">⚡</div><div class="number" id="sm-xp">0</div><div class="desc">Toplam XP</div></div>
+      <div class="stat-card"><div class="icon">📖</div><div class="number" id="sm-words">0</div><div class="desc">Öğrenilen Kelime</div></div>
+    </div>
+    <!-- Konu bazlı analiz -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+        <h3 style="font-size:15px;margin-bottom:14px;color:var(--green)">✅ Güçlü Konular</h3>
+        <div id="sm-strong"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+        <h3 style="font-size:15px;margin-bottom:14px;color:var(--red)">⚠️ Zayıf Konular</h3>
+        <div id="sm-weak"></div>
+      </div>
+    </div>
+    <!-- AI Tavsiye -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="font-size:15px">🤖 Kişisel Tavsiye</h3>
+        <button class="btn-primary" style="font-size:12px;padding:8px 14px" onclick="getAIAdvice()">Tavsiye Al ✨</button>
+      </div>
+      <div class="ai-loading" id="advice-loading"><div class="dot-pulse"><span></span><span></span><span></span></div> Analiz ediliyor...</div>
+      <div id="sm-advice" style="font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-line">
+        Tavsiye almak için yukarıdaki butona tıkla. Hata analizine göre kişisel çalışma planı oluşturulacak.
+      </div>
+    </div>
+    <!-- Zorluk dağılımı -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+      <h3 style="font-size:15px;margin-bottom:14px">📊 Zorluk Dağılımı</h3>
+      <div id="sm-difficulty"></div>
+    </div>
+  </div>
 </main>
 </div>
 
@@ -382,7 +423,11 @@ const DEFAULTS = {
   wordsLearned:0, todayEx:0, totalEx:0,
   correct:0, total:0, fcIndex:0,
   levelProgress:{A1:0,A2:0,B1:0,B2:0,C1:0},
-  topicsDone:[], history:[], vocab:null
+  topicsDone:[], history:[], vocab:null,
+  // Topic-level error tracking: {topicKey: {correct:0, total:0}}
+  topicStats: {},
+  // Difficulty tracking: {1:{correct,total}, 2:{...}, 3:{...}}
+  diffStats: {1:{correct:0,total:0}, 2:{correct:0,total:0}, 3:{correct:0,total:0}}
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 
@@ -390,15 +435,210 @@ let S = JSON.parse(JSON.stringify(DEFAULTS));
 let curEx=null, qIdx=0, sesScore=0, sesTotal=0;
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
+// MCQ=çoktan seçmeli | FILL=boşluk doldurma | TELC=sınav tarzı | diff: 1=kolay 2=orta 3=zor
 const GRAMMAR_Q = [
-  {q:"Seç: ___ heißt du?",opts:["Wie","Was","Wer","Wo"],ans:0,exp:"<strong>Wie</strong>=nasıl · <em>Was</em>=ne · <em>Wer</em>=kim · <em>Wo</em>=nerede<br>'Wie heißt du?' → Adın ne?"},
-  {q:"Seç: ___ bist du?",opts:["Wo","Wer","Was","Wie"],ans:0,exp:"<strong>Wo</strong>=nerede · Woher=nereden · Wohin=nereye<br>'Wo bist du?' → Neredesin?"},
-  {q:"Doğru çekim: Ich ___ Student.",opts:["bin","bist","ist","sind"],ans:0,exp:"<strong>sein:</strong> ich <strong>bin</strong> · du bist · er/sie/es ist · wir sind · ihr seid · sie sind"},
-  {q:"Doğru çekim: Du ___ sehr nett.",opts:["bin","bist","ist","sind"],ans:1,exp:"<strong>du bist</strong>=sen …-sin. 'Du bist sehr nett.' → Sen çok naziksin."},
-  {q:"Doğru çekim: Er ___ aus Deutschland.",opts:["komme","kommst","kommt","kommen"],ans:2,exp:"<strong>kommen:</strong> ich komme · du kommst · er/sie/es <strong>kommt</strong> · wir kommen"},
-  {q:"Olumsuz cümle: Ich ___ müde.",opts:["kein","nicht","nein","no"],ans:1,exp:"<strong>nicht</strong> fiil/sıfatı olumsuzlar. <strong>kein</strong> isim önünde kullanılır: Ich habe kein Auto."},
-  {q:"Hangi cümle doğrudur?",opts:["Ich heiße Maria.","Ich heißt Maria.","Ich heißen Maria.","Ich heiß Maria."],ans:0,exp:"<strong>heißen:</strong> ich <strong>heiße</strong> · du heißt · er/sie/es heißt"},
-  {q:"Olumsuz soruya evet demek için:",opts:["Ja","Nein","Doch","Bitte"],ans:2,exp:"<strong>Doch!</strong> olumsuz soruya olumlu yanıt.<br>'Kommst du nicht?' → 'Doch!' (Hayır, geliyorum!)"}
+  // ════════════════════════════════════════════════════════
+  // A1 — TEMEL GRAMER
+  // ════════════════════════════════════════════════════════
+
+  // ── sein & haben ──────────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"sein_haben",q:"Doğru çekim: Ich ___ Student.",opts:["bin","bist","ist","sind"],ans:0,exp:"<strong>sein:</strong> ich <strong>bin</strong> · du bist · er/sie/es ist · wir sind · ihr seid · sie/Sie sind"},
+  {type:"mcq",diff:1,level:"A1",topic:"sein_haben",q:"Doğru çekim: Du ___ sehr nett.",opts:["bin","bist","ist","sind"],ans:1,exp:"<strong>du bist</strong> = sen ...-sin. 'Du bist sehr nett.' = Sen çok naziksin."},
+  {type:"mcq",diff:1,level:"A1",topic:"sein_haben",q:"Doğru çekim: Er ___ Arzt.",opts:["bin","bist","ist","sind"],ans:2,exp:"<strong>er/sie/es ist</strong> = o ...-dır. Er ist Arzt = O doktordur."},
+  {type:"mcq",diff:1,level:"A1",topic:"sein_haben",q:"'haben' fiili: Wir ___ ein Auto.",opts:["habe","hast","hat","haben"],ans:3,exp:"<strong>haben:</strong> ich habe · du hast · er/sie/es hat · wir <strong>haben</strong> · ihr habt · sie haben"},
+  {type:"fill",diff:2,level:"A1",topic:"sein_haben",q:"Boşluğu doldur: Er ___ Hunger. (haben, 3. tekil)",correct:"hat",exp:"<strong>haben</strong> 3. tekil: er/sie/es <strong>hat</strong>. Er hat Hunger = Onun acıkmış."},
+  {type:"fill",diff:2,level:"A1",topic:"sein_haben",q:"Boşluğu doldur: Ihr ___ müde. (sein, 2. çoğul)",correct:"seid",exp:"<strong>sein</strong> 2. çoğul: ihr <strong>seid</strong>. Ihr seid müde = Siz yorgunsunuz."},
+
+  // ── Soru kelimeleri ────────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"fragen",q:"Seç: ___ heißt du?",opts:["Wie","Was","Wer","Wo"],ans:0,exp:"<strong>Wie</strong>=nasıl · Was=ne · Wer=kim · Wo=nerede"},
+  {type:"mcq",diff:1,level:"A1",topic:"fragen",q:"Seç: ___ bist du? (nerede)",opts:["Wo","Wer","Was","Wie"],ans:0,exp:"<strong>Wo</strong>=nerede · Woher=nereden · Wohin=nereye"},
+  {type:"mcq",diff:1,level:"A1",topic:"fragen",q:"Hangi soru kelimesi 'neden' anlamına gelir?",opts:["Wann","Warum","Womit","Woher"],ans:1,exp:"<strong>Warum</strong>=neden · Wann=ne zaman · Womit=neyle · Woher=nereden"},
+  {type:"fill",diff:2,level:"A1",topic:"fragen",q:"Boşluğu doldur: ___ alt bist du? (kaç yaşında)",correct:"Wie",exp:"<strong>Wie alt bist du?</strong> = Kaç yaşındasın? Wie=nasıl/kaç"},
+
+  // ── Olumsuzluk ─────────────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"negation",q:"Olumsuz cümle: Ich ___ müde.",opts:["kein","nicht","nein","no"],ans:1,exp:"<strong>nicht</strong> fiil/sıfatı olumsuzlar. <strong>kein</strong> isim önünde: Ich habe kein Auto."},
+  {type:"mcq",diff:2,level:"A1",topic:"negation",q:"Hangisi doğru? (Arabam yok.)",opts:["Ich habe nicht Auto.","Ich habe kein Auto.","Ich bin kein Auto.","Ich nicht habe Auto."],ans:1,exp:"<strong>kein</strong> belirsiz artikeli olumsuzlar: ein→kein, eine→keine.<br>Ich habe <strong>kein</strong> Auto. = Arabam yok."},
+  {type:"fill",diff:2,level:"A1",topic:"negation",q:"Boşluğu doldur: Das ist ___ gut. (iyi değil)",correct:"nicht",exp:"<strong>nicht</strong> sıfat/fiil olumsuzlar: Das ist nicht gut = Bu iyi değil."},
+  {type:"fill",diff:3,level:"A1",topic:"negation",q:"Boşluğu doldur: Ich habe ___ Geschwister. (kardeşi yok — isim olumsuzlama)",correct:"keine",exp:"<strong>keine</strong> = die Geschwister dişil çoğul → keine Geschwister = kardeşi yok."},
+
+  // ── Fiil çekimi (düzenli) ──────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"verben",q:"Doğru çekim: Er ___ aus Deutschland. (kommen)",opts:["komme","kommst","kommt","kommen"],ans:2,exp:"<strong>kommen:</strong> ich komme · du kommst · er/sie/es <strong>kommt</strong> · wir kommen"},
+  {type:"mcq",diff:1,level:"A1",topic:"verben",q:"Doğru çekim: Ich ___ Deutsch. (lernen)",opts:["lernst","lernt","lernen","lerne"],ans:3,exp:"<strong>lernen:</strong> ich <strong>lerne</strong> · du lernst · er lernt · wir lernen"},
+  {type:"fill",diff:2,level:"A1",topic:"verben",q:"Boşluğu doldur: Sie (çoğul) ___ in Berlin. (wohnen)",correct:"wohnen",exp:"<strong>wohnen:</strong> ich wohne · du wohnst · er wohnt · wir/sie/Sie <strong>wohnen</strong>"},
+  {type:"fill",diff:2,level:"A1",topic:"verben",q:"Boşluğu doldur: Ihr ___ gern Musik. (hören, 2. çoğul)",correct:"hört",exp:"<strong>hören:</strong> ich höre · du hörst · er hört · wir hören · ihr <strong>hört</strong>"},
+  {type:"mcq",diff:3,level:"A1",topic:"verben",q:"Hangi fiil çekimi YANLIŞTIR?",opts:["ich spiele","du spielst","er spielen","wir spielen"],ans:2,exp:"<strong>er spielen</strong> YANLIŞ! Doğrusu: er/sie/es <strong>spielt</strong>.<br>3. tekil şahıs daima -(e)t ekini alır."},
+
+  // ── Kelime sırası (V2 kuralı) ──────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A1",topic:"wortstellung",q:"V2 Kuralı: Hangi cümle doğrudur?",opts:["Heute ich gehe ins Kino.","Heute gehe ich ins Kino.","Ich heute gehe ins Kino.","Gehe heute ich ins Kino."],ans:1,exp:"<strong>V2 Kuralı:</strong> Fiil daima 2. konumda. 'Heute' başa gelince fiil hemen arkasından gelir: Heute <strong>gehe</strong> ich..."},
+  {type:"mcq",diff:2,level:"A1",topic:"wortstellung",q:"Hangi sıralama doğrudur?",opts:["Ich esse gern Pizza.","Ich gern esse Pizza.","Ich esse Pizza gern.","Gern esse ich Pizza nicht."],ans:0,exp:"<strong>Ich esse gern Pizza.</strong> — 'gern' fiilden hemen sonra, nesneden önce gelir."},
+  {type:"fill",diff:3,level:"A1",topic:"wortstellung",q:"Doğru sırala (tek kelime yaz): Am Montag ___ ich Deutsch. (lernen)",correct:"lerne",exp:"Am Montag <strong>lerne</strong> ich Deutsch. — Zaman zarfı başa gelince fiil 2. konuma kayar."},
+
+  // ── Artikel & çoğul ───────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"artikel",q:"Hangi cümle doğrudur?",opts:["Ich heiße Maria.","Ich heißt Maria.","Ich heißen Maria.","Ich heiß Maria."],ans:0,exp:"<strong>heißen:</strong> ich <strong>heiße</strong> · du heißt · er/sie/es heißt"},
+  {type:"mcq",diff:2,level:"A1",topic:"artikel",q:"Pluralform: das Kind → die ___",opts:["Kinds","Kinder","Kinden","Kindes"],ans:1,exp:"<strong>die Kinder</strong> — Almanca'da çoğul ekleri düzensizdir: das Kind→die Kinder, der Mann→die Männer"},
+  {type:"fill",diff:2,level:"A1",topic:"artikel",q:"Boşluğu doldur: Ich habe ___ Bruder. (ein, Akkusativ eril)",correct:"einen",exp:"<strong>einen</strong> — Akkusativ eril belirsiz artikel: ein→<strong>einen</strong><br>Nominativ: ein Mann → Akkusativ: einen Mann"},
+
+  // ── Possessivpronomen ─────────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A1",topic:"possessiv",q:"'Benim arabam' Almanca'da:",opts:["mein Auto","meine Auto","meinen Auto","meiner Auto"],ans:0,exp:"<strong>mein Auto</strong> — das Auto nötr → mein (nötr Nominativ)<br>mein(er)=eril · mein(e)=dişil · mein=nötr"},
+  {type:"mcq",diff:2,level:"A1",topic:"possessiv",q:"'Onun annesi' (kadın için): ___ Mutter",opts:["sein","ihre","ihr","ihren"],ans:2,exp:"<strong>ihr</strong> = onun (kadın için). Die Mutter dişil → ihr (Nominativ)<br>sein=onun (erkek) · ihr=onun (kadın)"},
+  {type:"fill",diff:3,level:"A1",topic:"possessiv",q:"Boşluğu doldur: Das ist ___ Buch. (benim — das Buch nötr)",correct:"mein",exp:"<strong>mein</strong> — nötr Nominativ için 'mein' (ek almaz): mein Buch, mein Auto, mein Kind."},
+
+  // ── Präpositionen (edatlar) ───────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A1",topic:"praepos",q:"'Berlinde yaşıyorum': Ich wohne ___ Berlin.",opts:["in","an","auf","bei"],ans:0,exp:"<strong>in + şehir</strong> = bir şehirde. Ich wohne in Berlin/in der Türkei.<br>Ülkeler için de 'in': in Deutschland, in der Türkei (dişil ülkeler 'der' alır)"},
+  {type:"mcq",diff:2,level:"A1",topic:"praepos",q:"Nereden? 'Almanya'dan': Er kommt ___ Deutschland.",opts:["von","aus","nach","zu"],ans:1,exp:"<strong>aus + ülke/şehir</strong> = nereden. Er kommt aus Deutschland/aus der Türkei.<br>aus=nereden geliyorum · nach=nereye gidiyorum"},
+  {type:"fill",diff:3,level:"A1",topic:"praepos",q:"Boşluğu doldur: Ich fahre ___ Berlin. (Berlin'e gidiyorum)",correct:"nach",exp:"<strong>nach + şehir/ülke</strong> = nereye. Ich fahre nach Berlin/nach Deutschland.<br>nach=şehir/ülke · in die=dişil yer: in die Türkei"},
+
+  // ── Modal fiiller ─────────────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A1",topic:"modal",q:"'Ich ___ Deutsch lernen.' (istemek = wollen)",opts:["will","kann","muss","darf"],ans:0,exp:"<strong>wollen:</strong> ich <strong>will</strong> · du willst · er will · wir wollen<br>können=yapabilmek · müssen=zorunda · dürfen=izni olmak"},
+  {type:"mcq",diff:2,level:"A1",topic:"modal",q:"'___ du Klavier spielen?' (yapabiliyor musun?)",opts:["Willst","Kannst","Musst","Darfst"],ans:1,exp:"<strong>können:</strong> ich kann · du <strong>kannst</strong> · er kann<br>'Kannst du...?' = Yapabilir misin...?"},
+  {type:"fill",diff:2,level:"A1",topic:"modal",q:"Boşluğu doldur: Ich ___ morgen arbeiten. (müssen, 1. tekil)",correct:"muss",exp:"<strong>müssen:</strong> ich <strong>muss</strong> · du musst · er muss · wir müssen<br>Ich muss = Zorundayım."},
+  {type:"fill",diff:3,level:"A1",topic:"modal",q:"Boşluğu doldur: Hier ___ man nicht rauchen. (dürfen — yasak)",correct:"darf",exp:"<strong>dürfen:</strong> ich darf · du darfst · er/man <strong>darf</strong><br>nicht dürfen = yasak. Hier darf man nicht rauchen = Burada sigara içilemez."},
+
+  // ── Selamlaşma ────────────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"begr",q:"Sabah selamlaması nasıldır?",opts:["Guten Morgen","Guten Abend","Gute Nacht","Auf Wiedersehen"],ans:0,exp:"<strong>Guten Morgen</strong>=Günaydın · Guten Tag=İyi günler · Guten Abend=İyi akşamlar · Gute Nacht=İyi geceler"},
+  {type:"mcq",diff:1,level:"A1",topic:"begr",q:"Arkadaşa samimi 'hoşça kal' nasıl denir?",opts:["Auf Wiedersehen","Tschüss","Guten Tag","Entschuldigung"],ans:1,exp:"<strong>Tschüss</strong>=samimi · Auf Wiedersehen=resmi · Bis bald=yakında görüşürüz · Bis morgen=yarın görüşürüz"},
+  {type:"fill",diff:1,level:"A1",topic:"begr",q:"Boşluğu doldur: ___ Morgen! (sabah selamlaması)",correct:"Guten",exp:"<strong>Guten Morgen!</strong> = Günaydın!"},
+
+  // ── Saat & sayılar ────────────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"zahlen",q:"'15' sayısı Almanca'da:",opts:["fünfzehn","fünfzig","fünf","vierzehn"],ans:0,exp:"<strong>fünfzehn</strong>=15 · fünfzig=50 · fünf=5 · vierzehn=14<br>11-19: -zehn eki alır (dreizehn, vierzehn, fünfzehn...)"},
+  {type:"mcq",diff:2,level:"A1",topic:"zahlen",q:"Saat 'Es ist halb vier' ne demek?",opts:["Saat 4","Saat 3.30","Saat 4.30","Saat 3"],ans:1,exp:"<strong>halb vier</strong> = 3.30 (dördün yarısı = 3.30!)<br>halb drei=2.30 · halb fünf=4.30 — Türkçe'den farklı dikkat!"},
+  {type:"fill",diff:2,level:"A1",topic:"zahlen",q:"Boşluğu doldur: Es ist ___ Uhr. (saat 8 — rakamla değil yazıyla)",correct:"acht",exp:"<strong>acht</strong>=8. Sayılar: eins, zwei, drei, vier, fünf, sechs, sieben, <strong>acht</strong>, neun, zehn"},
+
+  // ── TELC A1 tarzı ─────────────────────────────────────────────────────────
+  {type:"telc",diff:2,level:"A1",topic:"lesen",q:"TELC A1: Metni oku ve soruyu yanıtla.<br><br><em>Hallo! Ich heiße Mete. Ich komme aus der Türkei und wohne jetzt in Berlin. Ich bin 28 Jahre alt und bin Ingenieur.</em><br><br>Mete nerede yaşıyor?",opts:["Türkei","Ankara","Berlin","Hamburg"],ans:2,exp:"'wohne jetzt in <strong>Berlin</strong>' = şu an Berlin'de oturuyorum. wohnen=oturmak/yaşamak"},
+  {type:"telc",diff:2,level:"A1",topic:"lesen",q:"TELC A1: Metni oku.<br><br><em>Der Supermarkt ist montags bis samstags von 8 bis 20 Uhr geöffnet. Sonntags ist er geschlossen.</em><br><br>Pazar günü süpermarket nasıl?",opts:["08:00-20:00 açık","Sadece sabah açık","Kapalı","Bilgi yok"],ans:2,exp:"'Sonntags ist er <strong>geschlossen</strong>' = Pazar günleri kapalı. geschlossen=kapalı · geöffnet=açık"},
+  {type:"telc",diff:3,level:"A1",topic:"lesen",q:"TELC A1: Diyalogu oku.<br><br><em>Verkäufer: Guten Tag! Kann ich Ihnen helfen?<br>Kunde: Ja, ich suche eine Jacke in Blau.<br>Verkäufer: Welche Größe haben Sie?<br>Kunde: Größe 42, bitte.</em><br><br>Müşteri ne renk istiyor?",opts:["Kırmızı","Siyah","Mavi","Yeşil"],ans:2,exp:"'eine Jacke in <strong>Blau</strong>' = mavi renkli ceket. Blau=mavi"},
+  {type:"telc",diff:2,level:"A1",topic:"lesen",q:"TELC A1: İlanı oku.<br><br><em>Zimmer frei! 20 qm, ruhige Lage, Küche und Bad geteilt, 350 Euro warm. Tel: 0176-123456</em><br><br>Kira ücreti ne kadar?",opts:["20 Euro","176 Euro","350 Euro","350 + ekstra"],ans:2,exp:"'350 Euro warm' = 350 Euro (tüm giderler dahil). 'warm'=ısıtma dahil fiyat."},
+  {type:"telc",diff:3,level:"A1",topic:"lesen",q:"TELC A1: Metni oku.<br><br><em>Kursangebot: Deutschkurs A1, montags und mittwochs 18-20 Uhr. Kursgebühr: 80 Euro/Monat. Maximal 12 Teilnehmer. Anmeldung bis 15. September.</em><br><br>Kursta maksimum kaç kişi olabilir?",opts:["8","10","12","15"],ans:2,exp:"'Maximal <strong>12</strong> Teilnehmer' = en fazla 12 katılımcı. maximal=en fazla · Teilnehmer=katılımcı"},
+
+  // ════════════════════════════════════════════════════════
+  // A2 — ORTA-TEMEL GRAMER
+  // ════════════════════════════════════════════════════════
+
+  // ── Perfekt (geçmiş zaman) ────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"perfekt",q:"A2 — Perfekt: 'Ich ___ gestern Fußball gespielt.'",opts:["bin","habe","hatte","war"],ans:1,exp:"<strong>haben + Partizip II</strong> — eylem fiilleri 'haben' ile kullanılır.<br>spielen → gespielt: Ich <strong>habe</strong> gespielt."},
+  {type:"mcq",diff:2,level:"A2",topic:"perfekt",q:"A2 — Perfekt: 'Er ___ nach Berlin gefahren.'",opts:["hat","ist","war","hatte"],ans:1,exp:"<strong>sein + Partizip II</strong> — hareket/durum değişikliği fiilleri 'sein' ile kullanılır.<br>fahren → gefahren: Er <strong>ist</strong> gefahren. (gitmek/gelmek/koşmak → sein)"},
+  {type:"fill",diff:2,level:"A2",topic:"perfekt",q:"A2 — Perfekt yap: kaufen → ich habe ___",correct:"gekauft",exp:"<strong>kaufen → gekauft</strong> (ge- + kauft)<br>Düzenli Partizip II: ge- + Verbstamm + -(e)t<br>machen→gemacht · lernen→gelernt · kaufen→gekauft"},
+  {type:"fill",diff:3,level:"A2",topic:"perfekt",q:"A2 — Perfekt yap: schreiben → ich habe ___",correct:"geschrieben",exp:"<strong>schreiben → geschrieben</strong> — düzensiz fiil (ge- + Vokalwechsel + -en)<br>Önemli düzensizler: schreiben→geschrieben · lesen→gelesen · sehen→gesehen"},
+  {type:"mcq",diff:3,level:"A2",topic:"perfekt",q:"A2 — Hangi Partizip II YANLIŞ?",opts:["gemacht","gegangen","gekommt","gefahren"],ans:2,exp:"<strong>gekommt</strong> YANLIŞ! kommen düzensiz: kommen → <strong>gekommen</strong><br>gehen→gegangen · fahren→gefahren · machen→gemacht"},
+
+  // ── Präteritum (hikaye geçmişi: sein/haben) ───────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"praeteritum",q:"A2 — Präteritum: 'Ich ___ gestern sehr müde.' (sein)",opts:["war","bin","hatte","habe"],ans:0,exp:"<strong>sein Präteritum:</strong> ich <strong>war</strong> · du warst · er war · wir waren<br>Yazılı ve anlatı dilinde kullanılır."},
+  {type:"fill",diff:2,level:"A2",topic:"praeteritum",q:"A2 — Boşluğu doldur: Wir ___ gestern kein Geld. (haben, Präteritum)",correct:"hatten",exp:"<strong>haben Präteritum:</strong> ich hatte · du hattest · er hatte · wir <strong>hatten</strong>"},
+  {type:"mcq",diff:3,level:"A2",topic:"praeteritum",q:"A2 — 'Er ___ früher Lehrer.' (sein, Präteritum, 3. tekil)",opts:["war","ist","wäre","sei"],ans:0,exp:"<strong>er war</strong> = o (eskiden) öğretmendi. war = sein'in Präteritum 3. tekil hali."},
+
+  // ── Akkusativ & Dativ ─────────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"kasus",q:"A2 — Akkusativ: 'Ich sehe ___ Mann.'",opts:["der","die","den","dem"],ans:2,exp:"<strong>Akkusativ eril: den</strong><br>Nominativ: der Mann → Akkusativ: <strong>den</strong> Mann<br>sehen=görmek (Akkusativ ister)"},
+  {type:"mcq",diff:2,level:"A2",topic:"kasus",q:"A2 — Dativ: 'Ich helfe ___ Frau.'",opts:["die","der","den","dem"],ans:1,exp:"<strong>Dativ dişil: der</strong><br>Nominativ: die Frau → Dativ: <strong>der</strong> Frau<br>helfen=yardım etmek (Dativ ister)"},
+  {type:"fill",diff:3,level:"A2",topic:"kasus",q:"A2 — Boşluğu doldur: Er gibt ___ Kind ein Buch. (Dativ nötr)",correct:"dem",exp:"<strong>Dativ nötr: dem</strong><br>das Kind → Dativ: <strong>dem</strong> Kind<br>geben=vermek (Dativ ister: wem? kime?)"},
+  {type:"mcq",diff:3,level:"A2",topic:"kasus",q:"A2 — 'Ich wohne bei ___ Eltern.' (Dativ çoğul)",opts:["die","der","den","dem"],ans:2,exp:"<strong>Dativ çoğul: den (+n)</strong><br>die Eltern → Dativ: <strong>den</strong> Eltern (+n eki alır: den Kindern, den Männern)"},
+
+  // ── Trennbare Verben (ayrılabilen fiiller) ────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"trennbar",q:"A2 — 'aufmachen' fiili: Ich ___ das Fenster ___.",opts:["mache...auf","aufmache...","machen...auf","auf...mache"],ans:0,exp:"<strong>Trennbare Verben:</strong> ön ek cümle sonuna gider!<br>aufmachen: Ich <strong>mache</strong> das Fenster <strong>auf</strong>."},
+  {type:"fill",diff:2,level:"A2",topic:"trennbar",q:"A2 — Boşluğu doldur: Der Zug ___ um 8 Uhr ___. (abfahren — tren 8'de kalkıyor)",correct:"fährt...ab",exp:"<strong>abfahren (trennbar):</strong> Der Zug <strong>fährt</strong> um 8 Uhr <strong>ab</strong>.<br>ab-fahren → fährt...ab"},
+  {type:"mcq",diff:3,level:"A2",topic:"trennbar",q:"A2 — Perfekt'te trennbar fiil: 'anrufen' → Partizip II?",opts:["angerufen","gerufenan","angeruft","gerufan"],ans:0,exp:"<strong>anrufen → angerufen</strong><br>Trennbar fiillerde ge- ön ek ile fiil arasına girer: an-<strong>ge</strong>-rufen<br>aufmachen→aufgemacht · einschlafen→eingeschlafen"},
+
+  // ── Komparativ & Superlativ ───────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"komparativ",q:"A2 — 'groß' sıfatının karşılaştırma hali:",opts:["größer","grosser","großer","großste"],ans:0,exp:"<strong>groß → größer</strong> (Umlaut değişimi!)<br>alt→älter · jung→jünger · groß→größer<br>Kural: -er eki + bazı tek heceli sıfatlarda Umlaut"},
+  {type:"fill",diff:3,level:"A2",topic:"komparativ",q:"A2 — Boşluğu doldur: Berlin ist ___ als Hamburg. (groß karşılaştırma)",correct:"größer",exp:"<strong>größer als</strong> = ...dan daha büyük.<br>Karşılaştırma: Adjektiv + -er + als"},
+  {type:"mcq",diff:3,level:"A2",topic:"komparativ",q:"A2 — Superlativ: 'schnell' en üstünlük hali cümlede:",opts:["am schnellsten","am schnellste","der schnellste","schnellsten"],ans:0,exp:"<strong>am schnellsten</strong> — yüklem içinde am +...sten kullanılır.<br>am schnellsten · am größten · am ältesten"},
+
+  // ── Konjunktionen (bağlaçlar) ─────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"konjunktionen",q:"A2 — 'weil' bağlacıyla cümle sırası nasıl olur?",opts:["Fiil 2. konuma gelir","Fiil sona gider","Fiil başa gelir","Değişmez"],ans:1,exp:"<strong>weil (çünkü)</strong> yan cümle kurar → fiil SONA gider!<br>Ich bleibe zu Hause, weil ich krank <strong>bin</strong>. (bin sona gitti)"},
+  {type:"fill",diff:3,level:"A2",topic:"konjunktionen",q:"A2 — Boşluğu doldur: Ich lerne Deutsch, ___ ich in Deutschland arbeiten möchte. (çünkü)",correct:"weil",exp:"<strong>weil</strong>=çünkü. Yan cümle kurar, fiil sona gider.<br>denn=çünkü (ama fiil sırası değişmez, ana cümle gibi)"},
+  {type:"mcq",diff:2,level:"A2",topic:"konjunktionen",q:"A2 — 'dass' bağlacıyla: Ich denke, dass er ___ kommt.",opts:["morgen","morgen kommt","kommt morgen","kommt"],ans:3,exp:"<strong>dass</strong> yan cümle kurar → fiil SONA gider!<br>Ich denke, dass er <strong>kommt</strong>. (kommt sona gitti)"},
+
+  // ── TELC A2 tarzı ─────────────────────────────────────────────────────────
+  {type:"telc",diff:3,level:"A2",topic:"lesen",q:"TELC A2: Metni oku.<br><br><em>Liebe Maria, ich habe letzte Woche eine neue Stelle als Krankenschwester angefangen. Die Arbeit gefällt mir sehr gut, aber die Arbeitszeiten sind manchmal schwierig — ich arbeite oft am Wochenende. Wie geht es dir? Viele Grüße, Anna</em><br><br>Anna'nın işiyle ilgili sorun nedir?",opts:["İşi sevmiyor","Maaş düşük","Hafta sonları çalışmak zorunda","İş çok uzakta"],ans:2,exp:"'ich arbeite oft am <strong>Wochenende</strong>' = Hafta sonları çalışıyorum. manchmal=bazen · schwierig=zor"},
+  {type:"telc",diff:3,level:"A2",topic:"lesen",q:"TELC A2: İlanı oku.<br><br><em>STELLENANGEBOT: Wir suchen eine/n Bürokaufmann/-frau (Vollzeit). Voraussetzungen: gute Deutschkenntnisse, MS Office, Teamfähigkeit. Bewerbung per E-Mail an jobs@firma.de bis 30.11.</em><br><br>Bu iş ilanında hangi beceri ŞART DEĞİLDİR?",opts:["İyi Almanca","MS Office","Takım çalışması","Sürücü ehliyeti"],ans:3,exp:"İlanda: Deutschkenntnisse + MS Office + Teamfähigkeit var. Sürücü ehliyeti (Führerschein) <strong>istenmemiş</strong>."}
+  // ════════════════════════════════════════════════════════
+  // A1 — EKSİK KONULAR
+  // ════════════════════════════════════════════════════════
+
+  // ── Kişi zamirleri (Personalpronomen) ────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"personalpron",q:"'O (erkek) bir öğretmendir' — doğru zamir:",opts:["Sie","Es","Er","Wir"],ans:2,exp:"<strong>er</strong>=o (erkek) · sie=o (kadın) · es=o (nesne/nötr)<br>ich·du·er/sie/es·wir·ihr·sie/Sie"},
+  {type:"mcq",diff:1,level:"A1",topic:"personalpron",q:"'Siz (resmi)' Almanca'da:",opts:["ihr","sie","du","Sie"],ans:3,exp:"<strong>Sie</strong> (büyük S) = resmi siz. Fiil 3. çoğul gibi çekilir: Sie sind, Sie haben.<br>ihr = siz (samimi çoğul)"},
+  {type:"mcq",diff:2,level:"A1",topic:"personalpron",q:"Akkusativ: 'Ich sehe ___.' (onu — kadın için)",opts:["er","sie","ihn","ihr"],ans:1,exp:"<strong>sie</strong> — dişil Akkusativ zamiri değişmez: sie→sie<br>Ancak eril değişir: er → <strong>ihn</strong>: Ich sehe ihn."},
+  {type:"mcq",diff:2,level:"A1",topic:"personalpron",q:"Akkusativ: 'Ich kenne ___.' (onu — erkek için)",opts:["er","ihn","ihm","sein"],ans:1,exp:"<strong>ihn</strong> — eril Akkusativ: er→<strong>ihn</strong><br>kennen=tanımak (Akkusativ ister): Ich kenne ihn."},
+  {type:"fill",diff:2,level:"A1",topic:"personalpron",q:"Boşluğu doldur: ___ sind Studenten. (biz)",correct:"Wir",exp:"<strong>wir</strong>=biz · ihr=siz · sie=onlar · Sie=resmi siz<br>Wir sind Studenten = Biz öğrenciyiz."},
+  {type:"fill",diff:3,level:"A1",topic:"personalpron",q:"Boşluğu doldur: Ich helfe ___. (ona — Dativ, kadın)",correct:"ihr",exp:"<strong>ihr</strong> — dişil Dativ zamiri: sie→<strong>ihr</strong><br>helfen Dativ ister: Ich helfe ihr = Ona yardım ediyorum."},
+
+  // ── Nominativ & Akkusativ artikelleri ────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"nominativ_akk",q:"Nominativ: '___ Mann ist nett.' (eril belirli)",opts:["Den","Die","Das","Der"],ans:3,exp:"<strong>Nominativ belirli artikel:</strong> der(eril)·die(dişil)·das(nötr)·die(çoğul)<br>Özne konumunda Nominativ kullanılır."},
+  {type:"mcq",diff:2,level:"A1",topic:"nominativ_akk",q:"Akkusativ: 'Ich kaufe ___ Buch.' (nötr belirli)",opts:["der","die","das","den"],ans:2,exp:"<strong>Akkusativ nötr:</strong> das → <strong>das</strong> (değişmez!)<br>Sadece eril değişir: der→den<br>Ich kaufe das Buch = Kitabı satın alıyorum."},
+  {type:"mcq",diff:2,level:"A1",topic:"nominativ_akk",q:"Belirsiz artikel Akkusativ eril: 'Ich habe ___ Bruder.'",opts:["ein","eine","einen","einem"],ans:2,exp:"<strong>einen</strong> — belirsiz eril Akkusativ: ein→<strong>einen</strong><br>Ich habe einen Bruder = Bir erkek kardeşim var."},
+  {type:"fill",diff:2,level:"A1",topic:"nominativ_akk",q:"Boşluğu doldur: Ich sehe ___ Frau. (belirli, dişil Akkusativ)",correct:"die",exp:"<strong>die</strong> — dişil belirli artikel Akkusativ: die→<strong>die</strong> (değişmez)<br>Ich sehe die Frau = Kadını görüyorum."},
+  {type:"fill",diff:3,level:"A1",topic:"nominativ_akk",q:"Boşluğu doldur: Er trinkt ___ Kaffee. (belirsiz, eril Akkusativ)",correct:"einen",exp:"<strong>einen</strong> — belirsiz eril Akkusativ: ein→<strong>einen</strong><br>Er trinkt einen Kaffee = Bir kahve içiyor."},
+  {type:"mcq",diff:3,level:"A1",topic:"nominativ_akk",q:"Hangi cümle YANLIŞ?",opts:["Ich kaufe einen Apfel.","Sie hat ein Kind.","Er liebt die Musik.","Wir sehen der Film."],ans:3,exp:"<strong>Wir sehen der Film YANLIŞ!</strong><br>sehen Akkusativ ister + eril: der→<strong>den</strong><br>Doğrusu: Wir sehen <strong>den</strong> Film."},
+
+  // ── Çoğul formları (Plural) ───────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A1",topic:"plural",q:"das Kind → Çoğul:",opts:["die Kinds","die Kinder","die Kinde","die Kindern"],ans:1,exp:"<strong>das Kind → die Kinder</strong> (-er eki)<br>Çoğul ekleri: -e · -er · -en · -n · -s · -(e) (değişmez)"},
+  {type:"mcq",diff:2,level:"A1",topic:"plural",q:"der Mann → Çoğul:",opts:["die Manns","die Männer","die Männen","die Mann"],ans:1,exp:"<strong>der Mann → die Männer</strong> (Umlaut + -er)<br>Tek heceli eril isimler çoğunlukla Umlaut alır."},
+  {type:"mcq",diff:2,level:"A1",topic:"plural",q:"die Frau → Çoğul:",opts:["die Fraus","die Fraue","die Frauen","die Fräuen"],ans:2,exp:"<strong>die Frau → die Frauen</strong> (-en eki)<br>Dişil isimler genellikle -en veya -n alır: die Schule→die Schulen"},
+  {type:"fill",diff:2,level:"A1",topic:"plural",q:"das Auto → Çoğul: die ___",correct:"Autos",exp:"<strong>die Autos</strong> — yabancı kökenli kelimeler -s alır: Auto→Autos, Radio→Radios, Foto→Fotos"},
+  {type:"fill",diff:3,level:"A1",topic:"plural",q:"der Lehrer → Çoğul: die ___",correct:"Lehrer",exp:"<strong>die Lehrer</strong> — -er ile biten erkek meslekler değişmez (null Plural):<br>der Lehrer→die Lehrer · der Schüler→die Schüler"},
+  {type:"mcq",diff:3,level:"A1",topic:"plural",q:"Hangi çoğul YANLIŞ?",opts:["die Bücher (das Buch)","die Häuser (das Haus)","die Stuhlen (der Stuhl)","die Tische (der Tisch)"],ans:2,exp:"<strong>die Stuhlen YANLIŞ!</strong><br>der Stuhl → die Stühle (Umlaut + -e)<br>Doğru çoğullar: Bücher✓ Häuser✓ Tische✓"},
+
+  // ── Emir kipi (Imperativ) ─────────────────────────────────────────────────
+  {type:"mcq",diff:1,level:"A1",topic:"imperativ",q:"'Gel!' (du için) Almanca'da:",opts:["Kommst!","Kommt!","Komm!","Kommen!"],ans:2,exp:"<strong>Imperativ du:</strong> Fiil kökü (genellikle -e olmadan)<br>kommen→<strong>Komm!</strong> · gehen→Geh! · machen→Mach!"},
+  {type:"mcq",diff:1,level:"A1",topic:"imperativ",q:"'Oturun!' (Sie için — resmi) Almanca'da:",opts:["Sitz!","Sitzt!","Sitzen Sie!","Setzen Sie!"],ans:3,exp:"<strong>Imperativ Sie:</strong> Fiil + Sie (normal sıra korunur)<br>setzen Sie sich=oturun · kommen Sie=gelin · warten Sie=bekleyin"},
+  {type:"mcq",diff:2,level:"A1",topic:"imperativ",q:"'Yazın!' (ihr için — grup) Almanca'da:",opts:["Schreib!","Schreibt!","Schreiben!","Schreibst!"],ans:1,exp:"<strong>Imperativ ihr:</strong> Fiil + -t (2. çoğul geniş zaman gibi)<br>schreiben→<strong>Schreibt!</strong> · kommen→Kommt! · machen→Macht!"},
+  {type:"fill",diff:2,level:"A1",topic:"imperativ",q:"Boşluğu doldur: ___ bitte langsamer! (sprechen, du için — lütfen daha yavaş konuş)",correct:"Sprich",exp:"<strong>Sprich!</strong> — sprechen değişken (e→i): ich spreche → du sprichst → Imperativ: <strong>Sprich!</strong><br>Benzer: sehen→Sieh! · nehmen→Nimm! · essen→Iss!"},
+  {type:"telc",diff:2,level:"A1",topic:"imperativ",q:"TELC A1: Tabelayı oku.<br><br><em>Arzt: Nehmen Sie die Tabletten dreimal täglich!<br>Patient: Wie viele auf einmal?<br>Arzt: Eine Tablette, bitte. Und trinken Sie viel Wasser!</em><br><br>Doktor günde kaç kez ilaç alınmasını söylüyor?",opts:["1","2","3","4"],ans:2,exp:"'<strong>dreimal täglich</strong>' = günde 3 kez. dreimal=3 kez · täglich=günlük/her gün"},
+
+  // ════════════════════════════════════════════════════════
+  // A2 — EKSİK KONULAR
+  // ════════════════════════════════════════════════════════
+
+  // ── Dönüşlü fiiller (Reflexive Verben) ───────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"reflexiv",q:"A2 — 'Ich wasche mich.' cümlesinde 'mich' nedir?",opts:["Dativ zamir","Akkusativ dönüşlü zamir","Possessiv zamir","Nominativ zamir"],ans:1,exp:"<strong>mich</strong> = Akkusativ dönüşlü zamir (1. tekil)<br>sich waschen: ich wasche <strong>mich</strong> · du wäschst dich · er wäscht sich"},
+  {type:"mcq",diff:2,level:"A2",topic:"reflexiv",q:"A2 — Doğru çekim: Er ___ über das Geschenk.",opts:["freut sich","sich freut","freut mich","freuen sich"],ans:0,exp:"<strong>sich freuen</strong>=sevinmek: er <strong>freut sich</strong><br>Dönüşlü fiillerde zamir özneyle uyumlu: ich freue mich · du freust dich · er freut sich"},
+  {type:"fill",diff:2,level:"A2",topic:"reflexiv",q:"A2 — Boşluğu doldur: Wir ___ ___ auf den Urlaub. (sich freuen, 1. çoğul)",correct:"freuen uns",exp:"<strong>freuen uns</strong> — wir için dönüşlü zamir: <strong>uns</strong><br>ich→mich · du→dich · er/sie/es→sich · wir→<strong>uns</strong> · ihr→euch · sie→sich"},
+  {type:"fill",diff:3,level:"A2",topic:"reflexiv",q:"A2 — Boşluğu doldur: Kannst du ___ bitte beeilen? (sich beeilen — acele etmek, du için)",correct:"dich",exp:"<strong>dich</strong> — du için Akkusativ dönüşlü zamir.<br>Beeile dich! = Acele et! sich beeilen=acele etmek"},
+  {type:"mcq",diff:3,level:"A2",topic:"reflexiv",q:"A2 — Hangi fiil dönüşlü DEĞİLDİR?",opts:["sich erinnern","sich treffen","sich kaufen","sich setzen"],ans:2,exp:"<strong>sich kaufen</strong> dönüşlü DEĞİL — kaufen=satın almak, doğrudan nesne alır.<br>sich erinnern=hatırlamak · sich treffen=buluşmak · sich setzen=oturmak (oturup yerleşmek)"},
+
+  // ── Dativ edatları (Präpositionen mit Dativ) ──────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"praepositionen_a2",q:"A2 — 'mit + Dativ'. 'Seninle' Almanca'da:",opts:["mit du","mit dich","mit dir","mit dein"],ans:2,exp:"<strong>mit dir</strong> — mit her zaman Dativ ister.<br>mit mir · mit dir · mit ihm/ihr/ihm · mit uns · mit euch · mit ihnen"},
+  {type:"mcq",diff:2,level:"A2",topic:"praepositionen_a2",q:"A2 — Hangi edat HER ZAMAN Dativ ister?",opts:["durch","für","seit","ohne"],ans:2,exp:"<strong>seit</strong>=beri/den beri (HER ZAMAN Dativ)<br>Dativ edatları: mit·bei·nach·von·seit·zu·aus·gegenüber<br>Akkusativ edatları: durch·für·gegen·ohne·um"},
+  {type:"fill",diff:2,level:"A2",topic:"praepositionen_a2",q:"A2 — Boşluğu doldur: Ich lerne Deutsch ___ drei Monaten. (seit — 3 aydır)",correct:"seit",exp:"<strong>seit</strong>=beri/den beri (süregelen eylem için)<br>Ich lerne Deutsch seit drei Monaten = 3 aydır Almanca öğreniyorum.<br>Dikkat: Almanca'da Präsens kullanılır (Türkçe'deki gibi)!"},
+  {type:"fill",diff:3,level:"A2",topic:"praepositionen_a2",q:"A2 — Boşluğu doldur: Er fährt ___ dem Bus zur Arbeit. (mit)",correct:"mit",exp:"<strong>mit dem Bus</strong> = otobüsle. Araç için 'mit + Dativ'<br>mit dem Auto=arabayla · mit dem Zug=trenle · mit dem Fahrrad=bisikletle"},
+  {type:"mcq",diff:3,level:"A2",topic:"praepositionen_a2",q:"A2 — 'von + Dativ' neyi ifade eder? 'Das ist das Auto von meinem Vater.'",opts:["Yer belirtir","Sahiplik belirtir","Zaman belirtir","Araç belirtir"],ans:1,exp:"<strong>von + Dativ</strong> = sahiplik (Genitiv alternatifi):<br>das Auto von meinem Vater = babamın arabası<br>= das Auto meines Vaters (Genitiv)"},
+
+  // ── Gelecek zaman (Futur I / werden) ─────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"zukunft",q:"A2 — Gelecek zaman: 'Ich ___ morgen kommen.'",opts:["werde","werden","wird","wirst"],ans:0,exp:"<strong>werden + Infinitiv</strong> — Futur I:<br>ich <strong>werde</strong> · du wirst · er/sie/es wird · wir werden · ihr werdet · sie werden"},
+  {type:"mcq",diff:2,level:"A2",topic:"zukunft",q:"A2 — 'Er ___ nächstes Jahr heiraten.'",opts:["werde","wirst","wird","werden"],ans:2,exp:"<strong>er wird</strong> — 3. tekil werden: er/sie/es <strong>wird</strong><br>Er wird nächstes Jahr heiraten = Gelecek yıl evlenecek."},
+  {type:"fill",diff:2,level:"A2",topic:"zukunft",q:"A2 — Boşluğu doldur: Wir ___ nächsten Sommer nach Deutschland fahren.",correct:"werden",exp:"<strong>werden</strong> — 1. çoğul Futur: wir <strong>werden</strong> ... fahren<br>Infinitiv cümle sonuna gider!"},
+  {type:"fill",diff:3,level:"A2",topic:"zukunft",q:"A2 — Doğru sırala (tek kelime): Es ___ morgen regnen. (werden, 3. tekil)",correct:"wird",exp:"<strong>wird</strong> — es/er/sie 3. tekil: <strong>wird</strong><br>Es wird morgen regnen = Yarın yağmur yağacak."},
+  {type:"mcq",diff:3,level:"A2",topic:"zukunft",q:"A2 — Almanca'da gelecek zaman nasıl da ifade edilebilir?",opts:["Sadece werden ile","Präsens + zaman zarfı","Perfekt ile","Präteritum ile"],ans:1,exp:"<strong>Präsens + zaman zarfı</strong> da gelecek ifade eder!<br>Ich komme morgen. = Yarın geliyorum/geleceğim.<br>Günlük konuşmada çok yaygın, werden'dan daha sık!"},
+
+  // ── Genitiv ───────────────────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"genitiv",q:"A2 — Genitiv sorusu:",opts:["Wen?","Wem?","Wessen?","Was?"],ans:2,exp:"<strong>Wessen?</strong>=kimin? Genitiv sahiplik belirtir.<br>Wessen Auto ist das? = Bu kimin arabası?"},
+  {type:"mcq",diff:2,level:"A2",topic:"genitiv",q:"A2 — 'Babamın kitabı' Genitiv ile:",opts:["das Buch von mein Vater","das Buch meines Vaters","das Buch meinem Vater","das Buch mein Vaters"],ans:1,exp:"<strong>meines Vaters</strong> — eril/nötr Genitiv: -es eki<br>der Vater → meines Vaters · das Kind → des Kindes<br>die Mutter → meiner Mutter (dişil: -er eki)"},
+  {type:"fill",diff:3,level:"A2",topic:"genitiv",q:"A2 — Boşluğu doldur: Das ist das Auto ___ Lehrers. (des — eril Genitiv)",correct:"des",exp:"<strong>des</strong> — eril belirli Genitiv artikel: der→<strong>des</strong><br>das Auto des Lehrers = öğretmenin arabası<br>Genitiv belirli artikel: des(er/es)·der(dişil)·der(çoğul)"},
+  {type:"telc",diff:3,level:"A2",topic:"genitiv",q:"A2 TELC: Cümleyi tamamla.<br><br>'Das ist die Tasche ___ neuen Kollegin.'",opts:["des","dem","der","die"],ans:2,exp:"<strong>der</strong> — dişil Genitiv belirli artikel: die→<strong>der</strong><br>die Kollegin → der Kollegin (Genitiv dişil)"},
+
+  // ── Dolaylı sorular (Indirekte Fragen) ───────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"indirekt",q:"A2 — 'Ich weiß nicht, ___ er kommt.' (ob/evet-hayır sorusu)",opts:["ob","dass","weil","wenn"],ans:0,exp:"<strong>ob</strong>=evet/hayır dolaylı soru. Fiil sona gider!<br>Ich weiß nicht, ob er kommt. = Onun gelip gelmeyeceğini bilmiyorum."},
+  {type:"mcq",diff:2,level:"A2",topic:"indirekt",q:"A2 — 'Kannst du mir sagen, ___ der Bahnhof ist?' (nerede sorusu)",opts:["ob","wo","dass","weil"],ans:1,exp:"<strong>wo</strong> — W-Fragen dolaylı soruda da kullanılır, fiil sona gider:<br>Kannst du mir sagen, wo der Bahnhof ist?"},
+  {type:"fill",diff:3,level:"A2",topic:"indirekt",q:"A2 — Boşluğu doldur: Ich weiß nicht, ___ der Bus kommt. (ne zaman)",correct:"wann",exp:"<strong>wann</strong>=ne zaman (dolaylı soru)<br>Ich weiß nicht, wann der Bus kommt. = Otobüsün ne zaman geleceğini bilmiyorum.<br>Fiil sona gider!"},
+  {type:"mcq",diff:3,level:"A2",topic:"indirekt",q:"A2 — Hangi dolaylı soru YANLIŞ kurulmuş?",opts:["Ich frage, wo er wohnt.","Ich weiß, ob sie kommt.","Ich frage, wann kommt er.","Sag mir, wie du heißt."],ans:2,exp:"<strong>wann kommt er YANLIŞ!</strong> Dolaylı sorularda fiil SONA gider.<br>Doğrusu: Ich frage, wann er <strong>kommt</strong>. (er kommt sona)"},
+
+  // ── Emir kipi A2 genişleme ────────────────────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"imperativ_a2",q:"A2 — 'sein' fiili Imperativ: 'Sakin ol!' (du için)",opts:["Seist ruhig!","Sei ruhig!","Bist ruhig!","Seid ruhig!"],ans:1,exp:"<strong>Sei ruhig!</strong> — sein'in Imperativ du hali: <strong>sei</strong> (düzensiz!)<br>Sei still! · Sei bitte pünktlich! · Sei vorsichtig!"},
+  {type:"mcq",diff:2,level:"A2",topic:"imperativ_a2",q:"A2 — Nazik istek için hangi kalıp kullanılır?",opts:["Gib mir das Buch!","Könntest du mir bitte das Buch geben?","Du gibst mir das Buch!","Ich will das Buch!"],ans:1,exp:"<strong>Könntest du...?</strong> = Konjunktiv II ile nazik istek.<br>Könnten Sie...? (resmi) · Könntest du...? (samimi)<br>Direkt emir yerine çok daha nazik!"},
+  {type:"fill",diff:3,level:"A2",topic:"imperativ_a2",q:"A2 — Boşluğu doldur: ___ bitte das Fenster! (öffnen, Sie için — resmi)",correct:"Öffnen Sie",exp:"<strong>Öffnen Sie</strong> bitte das Fenster! = Lütfen pencereyi açar mısınız?<br>Imperativ Sie: Infinitiv + Sie (fiil başa gelir)"},
+
+  // ── Sıfat çekimi (Adjektivdeklination) ───────────────────────────────────
+  {type:"mcq",diff:2,level:"A2",topic:"adjektiv_dekl",q:"A2 — 'Büyük bir ev' (das Haus, Nominativ, belirsiz artikel):",opts:["ein großes Haus","ein großer Haus","ein großen Haus","ein große Haus"],ans:0,exp:"<strong>ein großes Haus</strong> — nötr belirsiz Nominativ: -es<br>Sıfat çekimi (belirsiz artikel, Nominativ):<br>eril: ein <strong>-er</strong> · dişil: eine <strong>-e</strong> · nötr: ein <strong>-es</strong>"},
+  {type:"mcq",diff:2,level:"A2",topic:"adjektiv_dekl",q:"A2 — 'Güzel kadın' (die Frau, Nominativ, belirli artikel):",opts:["die schöne Frau","die schöner Frau","die schönes Frau","die schönen Frau"],ans:0,exp:"<strong>die schöne Frau</strong> — belirli artikel sonrası Nominativ dişil: -e<br>Belirli artikel + sıfat Nominativ: der alte Mann · die schöne Frau · das kleine Kind"},
+  {type:"fill",diff:3,level:"A2",topic:"adjektiv_dekl",q:"A2 — Boşluğu doldur: Ich sehe den alt___ Mann. (Akkusativ eril, belirli artikel)",correct:"alten",exp:"<strong>alten</strong> — Akkusativ eril belirli artikel sonrası sıfat eki: <strong>-en</strong><br>den alten Mann · die schöne Frau · das kleine Kind (Akkusativ)"},
+  {type:"mcq",diff:3,level:"A2",topic:"adjektiv_dekl",q:"A2 — Hangi sıfat çekimi YANLIŞ?",opts:["mit dem alten Mann","für einen netten Freund","die schöne Musik","ein großer Fehler"],ans:1,exp:"<strong>für einen netten Freund</strong> DOĞRU aslında! Hepsi doğru.<br>für=Akkusativ → einen(eril) netten(Akkusativ eril -en)✓<br>Tüm seçenekler doğru — dikkatli oku!",},
+
+  // ── A2 TELC ek sorular ────────────────────────────────────────────────────
+  {type:"telc",diff:2,level:"A2",topic:"lesen",q:"TELC A2: E-postayı oku.<br><br><em>Betreff: Kursanmeldung<br>Sehr geehrte Damen und Herren, ich möchte mich für den Deutschkurs B1 anmelden. Ich habe bereits den A2-Kurs erfolgreich abgeschlossen. Bitte schicken Sie mir weitere Informationen. Mit freundlichen Grüßen, Mete Yıldız</em><br><br>Mete hangi kursa kaydolmak istiyor?",opts:["A1","A2","B1","B2"],ans:2,exp:"'für den Deutschkurs <strong>B1</strong> anmelden' = B1 kursuna kaydolmak istiyor.<br>sich anmelden=kaydolmak · bereits=zaten · abgeschlossen=tamamlamış"},
+  {type:"telc",diff:3,level:"A2",topic:"lesen",q:"TELC A2: Metni oku.<br><br><em>In Deutschland gibt es viele Möglichkeiten, Deutsch zu lernen. Volkshochschulen (VHS) bieten günstige Kurse an. Man kann auch online lernen oder einen Privatlehrer nehmen. Wichtig ist, regelmäßig zu üben.</em><br><br>Metne göre Almanya'da ucuz kurs nerede bulunur?",opts:["Özel okulda","İnternette","Volkshochschule'de","Üniversitede"],ans:2,exp:"'<strong>Volkshochschulen</strong> bieten <strong>günstige</strong> Kurse an' = VHS ucuz kurslar sunuyor.<br>günstig=ucuz · anbieten=sunmak · regelmäßig=düzenli"},
+  {type:"telc",diff:3,level:"A2",topic:"lesen",q:"TELC A2: Formu oku.<br><br><em>Krankmeldung: Name: Müller, Hans. Krank seit: 15.03. Arzt besucht: Ja. Diagnose: Grippe. Voraussichtlich wieder arbeitsfähig: 20.03.</em><br><br>Hans ne zaman işe dönmesi bekleniyor?",opts:["15 Mart","17 Mart","19 Mart","20 Mart"],ans:3,exp:"'voraussichtlich wieder arbeitsfähig: <strong>20.03.</strong>' = tahminen 20 Mart'ta işe dönecek.<br>voraussichtlich=tahminen · arbeitsfähig=çalışmaya hazır"}
+
 ];
 const ARTIKEL_Q = [
   {word:"Haus",art:"das",tr:"ev",exp:"<strong>das Haus</strong> — nötr. -chen/-lein ekleri her zaman <em>das</em> alır. das Häuschen=küçük ev"},
@@ -408,25 +648,238 @@ const ARTIKEL_Q = [
   {word:"Buch",art:"das",tr:"kitap",exp:"<strong>das Buch</strong> — eğitim nesneleri çoğunlukla nötr: das Heft, das Blatt"},
   {word:"Schule",art:"die",tr:"okul",exp:"<strong>die Schule</strong> — -e biten pek çok kelime dişil: die Straße, die Sprache, die Küche"},
   {word:"Tisch",art:"der",tr:"masa",exp:"<strong>der Tisch</strong> — mobilyanın çoğu eril: der Stuhl (sandalye), der Schrank (dolap)"},
-  {word:"Auto",art:"das",tr:"araba",exp:"<strong>das Auto</strong> — -o biten yabancı kökenli kelimeler nötr: das Radio, das Kino, das Büro"}
+  {word:"Auto",art:"das",tr:"araba",exp:"<strong>das Auto</strong> — -o biten yabancı kökenli kelimeler nötr: das Radio, das Kino, das Büro"},
+  {word:"Stadt",art:"die",tr:"şehir",exp:"<strong>die Stadt</strong> — dişil. die Straße (cadde), die Brücke (köprü) gibi yerler çoğunlukla dişil."},
+  {word:"Apfel",art:"der",tr:"elma",exp:"<strong>der Apfel</strong> — meyvelerin çoğu eril: der Apfel, der Pfirsich (şeftali), der Wein (şarap)."},
+  {word:"Wasser",art:"das",tr:"su",exp:"<strong>das Wasser</strong> — içecekler/maddeler çoğunlukla nötr: das Bier, das Öl."},
+  {word:"Mutter",art:"die",tr:"anne",exp:"<strong>die Mutter</strong> — dişil canlı. die Schwester, die Tante, die Oma."},
+  {word:"Vater",art:"der",tr:"baba",exp:"<strong>der Vater</strong> — eril canlı. der Bruder, der Onkel, der Opa."},
+  {word:"Computer",art:"der",tr:"bilgisayar",exp:"<strong>der Computer</strong> — -er ile biten aletler genelde eril: der Drucker, der Fernseher."},
+  {word:"Fenster",art:"das",tr:"pencere",exp:"<strong>das Fenster</strong> — nötr. das Zimmer (oda), das Bett (yatak)."},
+  {word:"Arbeit",art:"die",tr:"iş/çalışma",exp:"<strong>die Arbeit</strong> — -eit/-keit/-heit ile biten kelimeler HER ZAMAN dişil!<br>die Freiheit, die Gesundheit, die Möglichkeit."}
 ];
 const SENTENCE_Q = [
   {words:["Ich","heiße","Thomas","."],correct:"Ich heiße Thomas.",tr:"Adım Thomas."},
   {words:["Woher","kommst","du","?"],correct:"Woher kommst du?",tr:"Sen nereden geliyorsun?"},
-  {words:["Ich","bin","müde","nicht","."],correct:"Ich bin nicht müde.",tr:"Ben yorgun değilim.",hint:"nicht genellikle sona yakın gelir"},
-  {words:["Das","Haus","groß","ist","."],correct:"Das Haus ist groß.",tr:"Ev büyük.",hint:"Ana cümlede fiil 2. konumdadır"},
-  {words:["Er","aus","kommt","Berlin","."],correct:"Er kommt aus Berlin.",tr:"O Berlin'den geliyor.",hint:"Fiil daima 2. konumda olmalı"}
+  {words:["Ich","bin","nicht","müde","."],correct:"Ich bin nicht müde.",tr:"Ben yorgun değilim.",hint:"nicht genellikle sona yakın gelir"},
+  {words:["Das","Haus","ist","groß","."],correct:"Das Haus ist groß.",tr:"Ev büyük.",hint:"Ana cümlede fiil 2. konumdadır"},
+  {words:["Er","kommt","aus","Berlin","."],correct:"Er kommt aus Berlin.",tr:"O Berlin'den geliyor.",hint:"Fiil daima 2. konumda olmalı"},
+  {words:["Wie","alt","bist","du","?"],correct:"Wie alt bist du?",tr:"Kaç yaşındasın?",hint:"Soru cümlelerinde fiil 2. konumda"},
+  {words:["Ich","bin","22","Jahre","alt","."],correct:"Ich bin 22 Jahre alt.",tr:"22 yaşındayım.",hint:"sein fiili 2. konuma gelir"},
+  {words:["Haben","Sie","Kinder","?"],correct:"Haben Sie Kinder?",tr:"Çocuğunuz var mı?",hint:"Soru cümlelerinde fiil öne gelir"},
+  {words:["Die","Katze","ist","schwarz","und","klein","."],correct:"Die Katze ist schwarz und klein.",tr:"Kedi siyah ve küçük."},
+  {words:["Ich","gehe","heute","in","die","Schule","."],correct:"Ich gehe heute in die Schule.",tr:"Bugün okula gidiyorum.",hint:"Fiil 2. konumda, zaman zarfı sırayı değiştirir"},
+  {words:["Wir","haben","ein","großes","Haus","."],correct:"Wir haben ein großes Haus.",tr:"Büyük bir evimiz var."},
+  {words:["Er","spielt","jeden","Tag","Fußball","."],correct:"Er spielt jeden Tag Fußball.",tr:"Her gün futbol oynuyor.",hint:"Zaman zarfı fiilden sonra gelir"},
+  {words:["Kommst","du","aus","der","Türkei","?"],correct:"Kommst du aus der Türkei?",tr:"Türkiye'den mi geliyorsun?"},
+  {words:["Ich","lerne","jeden","Tag","Deutsch","."],correct:"Ich lerne jeden Tag Deutsch.",tr:"Her gün Almanca öğreniyorum."},
+  {words:["Das","Wetter","ist","heute","schön","."],correct:"Das Wetter ist heute schön.",tr:"Bugün hava güzel."}
 ];
+
+// ── A1 Tam Kelime Bankası (100+ kelime) ─────────────────────────────────────
 const VOCAB_DEFAULT = [
-  {word:"das Haus",tr:"ev",art:"das (nötr)",ex:"Das Haus ist groß.\nEv büyük.",srs:0},
-  {word:"der Mann",tr:"adam, erkek",art:"der (eril)",ex:"Der Mann ist nett.\nAdam nazik.",srs:0},
-  {word:"die Frau",tr:"kadın",art:"die (dişil)",ex:"Die Frau arbeitet hier.\nKadın burada çalışıyor.",srs:0},
-  {word:"das Kind",tr:"çocuk",art:"das (nötr)",ex:"Das Kind spielt.\nÇocuk oynuyor.",srs:0},
-  {word:"gut",tr:"iyi, güzel",art:"—",ex:"Das ist gut!\nBu iyi!",srs:0},
-  {word:"groß",tr:"büyük, uzun boylu",art:"—",ex:"Er ist sehr groß.\nO çok uzun boylu.",srs:0},
-  {word:"klein",tr:"küçük",art:"—",ex:"Das ist klein.\nBu küçük.",srs:0},
-  {word:"die Schule",tr:"okul",art:"die (dişil)",ex:"Ich gehe in die Schule.\nOkula gidiyorum.",srs:0}
+  {word:"der Mann",tr:"adam, erkek",art:"der (eril)",ex:"Der Mann ist nett.
+Adam nazik.",srs:0},
+  {word:"die Frau",tr:"kadın",art:"die (dişil)",ex:"Die Frau arbeitet hier.
+Kadın burada çalışıyor.",srs:0},
+  {word:"das Kind",tr:"çocuk",art:"das (nötr)",ex:"Das Kind spielt.
+Çocuk oynuyor.",srs:0},
+  {word:"der Vater",tr:"baba",art:"der (eril)",ex:"Mein Vater ist Arzt.
+Babam doktor.",srs:0},
+  {word:"die Mutter",tr:"anne",art:"die (dişil)",ex:"Meine Mutter kocht gut.
+Annem iyi yemek pişirir.",srs:0},
+  {word:"der Bruder",tr:"erkek kardeş",art:"der (eril)",ex:"Ich habe einen Bruder.
+Bir erkek kardeşim var.",srs:0},
+  {word:"die Schwester",tr:"kız kardeş",art:"die (dişil)",ex:"Meine Schwester ist jung.
+Kız kardeşim genç.",srs:0},
+  {word:"der Opa",tr:"dede",art:"der (eril)",ex:"Mein Opa ist alt.
+Dedem yaşlı.",srs:0},
+  {word:"die Oma",tr:"büyükanne",art:"die (dişil)",ex:"Die Oma backt Kuchen.
+Büyükannem pasta yapar.",srs:0},
+  {word:"der Freund",tr:"erkek arkadaş",art:"der (eril)",ex:"Das ist mein Freund Max.
+Bu benim arkadaşım Max.",srs:0},
+  {word:"die Freundin",tr:"kız arkadaş",art:"die (dişil)",ex:"Meine Freundin heißt Lisa.
+Kız arkadaşımın adı Lisa.",srs:0},
+  {word:"das Haus",tr:"ev, bina",art:"das (nötr)",ex:"Das Haus ist groß.
+Ev büyük.",srs:0},
+  {word:"die Wohnung",tr:"daire",art:"die (dişil)",ex:"Die Wohnung ist schön.
+Daire güzel.",srs:0},
+  {word:"das Zimmer",tr:"oda",art:"das (nötr)",ex:"Das Zimmer ist klein.
+Oda küçük.",srs:0},
+  {word:"die Küche",tr:"mutfak",art:"die (dişil)",ex:"Die Küche ist modern.
+Mutfak modern.",srs:0},
+  {word:"das Bett",tr:"yatak",art:"das (nötr)",ex:"Das Bett ist bequem.
+Yatak rahat.",srs:0},
+  {word:"der Tisch",tr:"masa",art:"der (eril)",ex:"Der Tisch ist groß.
+Masa büyük.",srs:0},
+  {word:"der Stuhl",tr:"sandalye",art:"der (eril)",ex:"Der Stuhl ist kaputt.
+Sandalye bozuk.",srs:0},
+  {word:"das Fenster",tr:"pencere",art:"das (nötr)",ex:"Das Fenster ist offen.
+Pencere açık.",srs:0},
+  {word:"die Tür",tr:"kapı",art:"die (dişil)",ex:"Die Tür ist zu.
+Kapı kapalı.",srs:0},
+  {word:"das Brot",tr:"ekmek",art:"das (nötr)",ex:"Ich esse Brot zum Frühstück.
+Kahvaltıda ekmek yerim.",srs:0},
+  {word:"die Milch",tr:"süt",art:"die (dişil)",ex:"Ich trinke Milch.
+Süt içerim.",srs:0},
+  {word:"das Wasser",tr:"su",art:"das (nötr)",ex:"Ich trinke viel Wasser.
+Çok su içerim.",srs:0},
+  {word:"der Kaffee",tr:"kahve",art:"der (eril)",ex:"Ich mag Kaffee.
+Kahveyi severim.",srs:0},
+  {word:"der Tee",tr:"çay",art:"der (eril)",ex:"Möchten Sie Tee?
+Çay ister misiniz?",srs:0},
+  {word:"der Apfel",tr:"elma",art:"der (eril)",ex:"Der Apfel ist rot.
+Elma kırmızı.",srs:0},
+  {word:"das Fleisch",tr:"et",art:"das (nötr)",ex:"Ich esse kein Fleisch.
+Et yemem.",srs:0},
+  {word:"der Käse",tr:"peynir",art:"der (eril)",ex:"Der Käse ist lecker.
+Peynir lezzetli.",srs:0},
+  {word:"das Ei",tr:"yumurta",art:"das (nötr)",ex:"Ich esse zwei Eier.
+İki yumurta yerim.",srs:0},
+  {word:"rot",tr:"kırmızı",art:"—",ex:"Das Auto ist rot.
+Araba kırmızı.",srs:0},
+  {word:"blau",tr:"mavi",art:"—",ex:"Der Himmel ist blau.
+Gökyüzü mavi.",srs:0},
+  {word:"grün",tr:"yeşil",art:"—",ex:"Das Gras ist grün.
+Çimen yeşil.",srs:0},
+  {word:"gelb",tr:"sarı",art:"—",ex:"Die Banane ist gelb.
+Muz sarı.",srs:0},
+  {word:"schwarz",tr:"siyah",art:"—",ex:"Die Katze ist schwarz.
+Kedi siyah.",srs:0},
+  {word:"weiß",tr:"beyaz",art:"—",ex:"Der Schnee ist weiß.
+Kar beyaz.",srs:0},
+  {word:"braun",tr:"kahverengi",art:"—",ex:"Der Hund ist braun.
+Köpek kahverengi.",srs:0},
+  {word:"Montag",tr:"Pazartesi",art:"der",ex:"Am Montag arbeite ich.
+Pazartesi çalışıyorum.",srs:0},
+  {word:"Dienstag",tr:"Salı",art:"der",ex:"Am Dienstag habe ich frei.
+Salı izinliyim.",srs:0},
+  {word:"Mittwoch",tr:"Çarşamba",art:"der",ex:"Am Mittwoch gehe ich ins Kino.
+Çarşamba sinemaya gidiyorum.",srs:0},
+  {word:"Donnerstag",tr:"Perşembe",art:"der",ex:"Am Donnerstag lerne ich Deutsch.
+Perşembe Almanca öğreniyorum.",srs:0},
+  {word:"Freitag",tr:"Cuma",art:"der",ex:"Am Freitag ist das Wochenende fast da!
+Cuma hafta sonu neredeyse geldi!",srs:0},
+  {word:"Samstag",tr:"Cumartesi",art:"der",ex:"Am Samstag schlafe ich lange.
+Cumartesi uzun uyurum.",srs:0},
+  {word:"Sonntag",tr:"Pazar",art:"der",ex:"Am Sonntag ist der Laden geschlossen.
+Pazar dükkan kapalı.",srs:0},
+  {word:"Januar",tr:"Ocak",art:"der",ex:"Im Januar ist es kalt.
+Ocak'ta hava soğuk.",srs:0},
+  {word:"Februar",tr:"Şubat",art:"der",ex:"Im Februar gibt es Fasching.
+Şubat'ta karnaval var.",srs:0},
+  {word:"März",tr:"Mart",art:"der",ex:"Im März beginnt der Frühling.
+Mart'ta ilkbahar başlar.",srs:0},
+  {word:"April",tr:"Nisan",art:"der",ex:"Im April regnet es viel.
+Nisan'da çok yağmur yağar.",srs:0},
+  {word:"Mai",tr:"Mayıs",art:"der",ex:"Im Mai ist es warm.
+Mayıs'ta hava ılık.",srs:0},
+  {word:"Juni",tr:"Haziran",art:"der",ex:"Im Juni beginnt der Sommer.
+Haziran'da yaz başlar.",srs:0},
+  {word:"Juli",tr:"Temmuz",art:"der",ex:"Im Juli fahre ich in Urlaub.
+Temmuz'da tatile gidiyorum.",srs:0},
+  {word:"August",tr:"Ağustos",art:"der",ex:"Im August ist es sehr heiß.
+Ağustos'ta çok sıcak.",srs:0},
+  {word:"September",tr:"Eylül",art:"der",ex:"Im September beginnt die Schule.
+Eylül'de okul başlar.",srs:0},
+  {word:"Oktober",tr:"Ekim",art:"der",ex:"Im Oktober sind die Blätter bunt.
+Ekim'de yapraklar renkli.",srs:0},
+  {word:"November",tr:"Kasım",art:"der",ex:"Im November ist es grau.
+Kasım'da hava gri.",srs:0},
+  {word:"Dezember",tr:"Aralık",art:"der",ex:"Im Dezember ist Weihnachten.
+Aralık'ta Noel var.",srs:0},
+  {word:"der Arzt",tr:"doktor (erkek)",art:"der (eril)",ex:"Er ist Arzt.
+O doktor.",srs:0},
+  {word:"die Ärztin",tr:"doktor (kadın)",art:"die (dişil)",ex:"Sie ist Ärztin.
+O doktor.",srs:0},
+  {word:"der Lehrer",tr:"öğretmen (erkek)",art:"der (eril)",ex:"Er ist Lehrer.
+O öğretmen.",srs:0},
+  {word:"die Lehrerin",tr:"öğretmen (kadın)",art:"die (dişil)",ex:"Sie ist Lehrerin.
+O öğretmen.",srs:0},
+  {word:"der Ingenieur",tr:"mühendis",art:"der (eril)",ex:"Er ist Ingenieur.
+O mühendis.",srs:0},
+  {word:"der Student",tr:"öğrenci (üniversite)",art:"der (eril)",ex:"Ich bin Student.
+Üniversite öğrencisiyim.",srs:0},
+  {word:"der Koch",tr:"aşçı",art:"der (eril)",ex:"Er ist Koch im Restaurant.
+O restoranda aşçı.",srs:0},
+  {word:"gut",tr:"iyi, güzel",art:"—",ex:"Das Essen ist gut.
+Yemek iyi.",srs:0},
+  {word:"groß",tr:"büyük, uzun boylu",art:"—",ex:"Er ist sehr groß.
+O çok uzun boylu.",srs:0},
+  {word:"klein",tr:"küçük",art:"—",ex:"Das Kind ist klein.
+Çocuk küçük.",srs:0},
+  {word:"alt",tr:"yaşlı, eski",art:"—",ex:"Das Haus ist alt.
+Ev eski.",srs:0},
+  {word:"neu",tr:"yeni",art:"—",ex:"Ich habe ein neues Auto.
+Yeni bir arabam var.",srs:0},
+  {word:"schön",tr:"güzel",art:"—",ex:"Das Wetter ist schön.
+Hava güzel.",srs:0},
+  {word:"billig",tr:"ucuz",art:"—",ex:"Das ist billig.
+Bu ucuz.",srs:0},
+  {word:"teuer",tr:"pahalı",art:"—",ex:"Das ist sehr teuer!
+Bu çok pahalı!",srs:0},
+  {word:"kalt",tr:"soğuk",art:"—",ex:"Das Wasser ist kalt.
+Su soğuk.",srs:0},
+  {word:"warm",tr:"ılık, sıcak",art:"—",ex:"Das Essen ist warm.
+Yemek sıcak.",srs:0},
+  {word:"müde",tr:"yorgun",art:"—",ex:"Ich bin sehr müde.
+Çok yorgunum.",srs:0},
+  {word:"hungrig",tr:"aç (yemek)",art:"—",ex:"Ich bin hungrig.
+Acıktım.",srs:0},
+  {word:"gehen",tr:"gitmek",art:"—",ex:"Ich gehe ins Kino.
+Sinemaya gidiyorum.",srs:0},
+  {word:"kommen",tr:"gelmek",art:"—",ex:"Er kommt aus Berlin.
+O Berlin'den geliyor.",srs:0},
+  {word:"machen",tr:"yapmak",art:"—",ex:"Was machst du?
+Ne yapıyorsun?",srs:0},
+  {word:"kaufen",tr:"satın almak",art:"—",ex:"Ich kaufe ein Buch.
+Bir kitap satın alıyorum.",srs:0},
+  {word:"trinken",tr:"içmek",art:"—",ex:"Er trinkt Kaffee.
+Kahve içiyor.",srs:0},
+  {word:"essen",tr:"yemek yemek",art:"—",ex:"Wir essen Pizza.
+Pizza yiyoruz.",srs:0},
+  {word:"schlafen",tr:"uyumak",art:"—",ex:"Das Kind schläft.
+Çocuk uyuyor.",srs:0},
+  {word:"arbeiten",tr:"çalışmak",art:"—",ex:"Sie arbeitet im Büro.
+O ofiste çalışıyor.",srs:0},
+  {word:"lernen",tr:"öğrenmek",art:"—",ex:"Ich lerne Deutsch.
+Almanca öğreniyorum.",srs:0},
+  {word:"spielen",tr:"oynamak",art:"—",ex:"Die Kinder spielen.
+Çocuklar oynuyor.",srs:0},
+  {word:"wohnen",tr:"oturmak, yaşamak",art:"—",ex:"Ich wohne in Berlin.
+Berlin'de oturuyorum.",srs:0},
+  {word:"heißen",tr:"adı olmak",art:"—",ex:"Ich heiße Mete.
+Adım Mete.",srs:0},
+  {word:"hier",tr:"burada",art:"—",ex:"Ich bin hier.
+Ben buradayım.",srs:0},
+  {word:"dort",tr:"orada",art:"—",ex:"Er wohnt dort.
+O orada oturuyor.",srs:0},
+  {word:"links",tr:"sol, sola",art:"—",ex:"Biegen Sie links ab.
+Sola dönün.",srs:0},
+  {word:"rechts",tr:"sağ, sağa",art:"—",ex:"Das Büro ist rechts.
+Ofis sağda.",srs:0},
+  {word:"geradeaus",tr:"düz, doğru",art:"—",ex:"Gehen Sie geradeaus.
+Düz gidin.",srs:0},
+  {word:"die Straße",tr:"sokak, cadde",art:"die (dişil)",ex:"Die Straße ist lang.
+Sokak uzun.",srs:0},
+  {word:"der Bahnhof",tr:"tren istasyonu",art:"der (eril)",ex:"Der Bahnhof ist groß.
+Tren istasyonu büyük.",srs:0},
+  {word:"die Apotheke",tr:"eczane",art:"die (dişil)",ex:"Die Apotheke ist um die Ecke.
+Eczane köşede.",srs:0},
+  {word:"der Supermarkt",tr:"süpermarket",art:"der (eril)",ex:"Der Supermarkt ist offen.
+Süpermarket açık.",srs:0},
+  {word:"die Schule",tr:"okul",art:"die (dişil)",ex:"Ich gehe in die Schule.
+Okula gidiyorum.",srs:0},
+  {word:"das Buch",tr:"kitap",art:"das (nötr)",ex:"Das Buch ist interessant.
+Kitap ilginç.",srs:0},
+  {word:"der Stift",tr:"kalem",art:"der (eril)",ex:"Hast du einen Stift?
+Kalemen var mı?",srs:0},
+  {word:"das Heft",tr:"defter",art:"das (nötr)",ex:"Ich schreibe ins Heft.
+Defteri yazıyorum.",srs:0},
+  {word:"die Hausaufgabe",tr:"ev ödevi",art:"die (dişil)",ex:"Ich mache meine Hausaufgaben.
+Ödevlerimi yapıyorum.",srs:0}
 ];
+
 const TOPICS = [
   {key:"begr",name:"Begrüßung & Abschied",tr:"Selam & Veda",icon:"👋"},
   {key:"zahl",name:"Zahlen 1–100",tr:"Sayılar 1–100",icon:"🔢"},
@@ -434,11 +887,13 @@ const TOPICS = [
   {key:"fami",name:"Familie",tr:"Aile",icon:"👨‍👩‍👧"},
   {key:"beru",name:"Berufe",tr:"Meslekler",icon:"💼"},
   {key:"sein",name:"sein & haben",tr:"Olmak & Sahip Olmak",icon:"⚙️"},
-  {key:"esse",name:"Essen & Trinken",tr:"Yemek & İçmek",icon:"🍽️",locked:true},
-  {key:"woch",name:"Wochentage",tr:"Haftanın Günleri",icon:"📅",locked:true}
-];
-
-// ── SYNC STATUS ───────────────────────────────────────────────────────────────
+  {key:"esse",name:"Essen & Trinken",tr:"Yemek & İçmek",icon:"🍽️"},
+  {key:"woch",name:"Wochentage & Monate",tr:"Günler & Aylar",icon:"📅"},
+  {key:"zahl2",name:"Zahlen & Uhrzeit",tr:"Sayılar & Saat",icon:"🕐"},
+  {key:"wohn",name:"Wohnen & Haus",tr:"Ev & Yaşam",icon:"🏠"},
+  {key:"richt",name:"Richtungen & Orte",tr:"Yönler & Yerler",icon:"🗺️"},
+  {key:"adj",name:"Adjektive",tr:"Sıfatlar",icon:"✨"}
+]; ── SYNC STATUS ───────────────────────────────────────────────────────────────
 function setSyncStatus(state, msg) {
   document.getElementById('sync-dot').className = 'sync-dot ' + state;
   document.getElementById('sync-label').textContent = msg;
@@ -599,12 +1054,13 @@ function updateUI() {
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
 function showPage(p, btn) {
-  ['home','topics','vocab','progress'].forEach(id=>{document.getElementById('page-'+id).style.display=id===p?'block':'none';});
+  ['home','topics','vocab','progress','summary'].forEach(id=>{document.getElementById('page-'+id).style.display=id===p?'block':'none';});
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   if(p==='topics') renderTopics();
   if(p==='vocab') { loadFC(); renderVocabList(); }
   if(p==='progress') renderProgress();
+  if(p==='summary') renderSummary();
 }
 function setLevel(lvl, btn) {
   S.level=lvl;
@@ -618,6 +1074,11 @@ function setLevel(lvl, btn) {
 function startExercise(type) {
   curEx=type; qIdx=0; sesScore=0; sesTotal=0;
   checkStreak();
+  // Pre-build, SHUFFLE and limit to 10 base questions
+  const allQs = getQs();
+  const shuffled = [...allQs].sort(() => Math.random() - 0.5).slice(0, 10);
+  window._currentQs = shuffled;
+  window._sesBaseTotal = shuffled.length;
   document.getElementById('home-cards').style.display='none';
   document.getElementById('exercise-panel').style.display='block';
   renderQ();
@@ -629,8 +1090,19 @@ function closeExercise() {
 }
 
 function getQs() {
-  if (curEx==='grammar'||curEx==='quiz') return GRAMMAR_Q;
-  if (curEx==='artikel') return ARTIKEL_Q.map(a=>({q:`Bu kelimenin artikelini seç: <span style="color:var(--gold);font-weight:600">${a.word}</span> <span style="color:var(--text3);font-size:13px">(${a.tr})</span>`,opts:['der','die','das'],ans:['der','die','das'].indexOf(a.art),exp:a.exp}));
+  if (curEx==='grammar'||curEx==='quiz') {
+    // level filter
+    const lvlOrder = {A1:1,A2:2,B1:3,B2:4,C1:5};
+    const userLvl = lvlOrder[S.level]||1;
+    return GRAMMAR_Q.filter(q=>lvlOrder[q.level||'A1']<=userLvl);
+  }
+  if (curEx==='artikel') {
+    // Mix: half MCQ (buttons), half FILL (keyboard)
+    return ARTIKEL_Q.map((a,i)=> i%2===0
+      ? {type:'mcq',diff:1,level:'A1',topic:'artikel',q:`Artikeli seç: <span style="color:var(--gold);font-weight:600;font-size:20px">${a.word}</span> <span style="color:var(--text3);font-size:13px">(${a.tr})</span>`,opts:['der','die','das'],ans:['der','die','das'].indexOf(a.art),exp:a.exp}
+      : {type:'fill',diff:2,level:'A1',topic:'artikel',q:`Artikeli yaz: <span style="color:var(--gold);font-weight:600;font-size:20px">${a.word}</span> <span style="color:var(--text3);font-size:13px">(${a.tr})</span>`,correct:a.art,exp:a.exp}
+    );
+  }
   return [];
 }
 
@@ -638,31 +1110,195 @@ function renderQ() {
   if (curEx==='sentence') { renderSentenceQ(); return; }
   if (curEx==='writing') { renderWritingQ(); return; }
   if (curEx==='srs') { renderSRSQ(); return; }
-  const qs=getQs(), total=Math.min(qs.length,6);
-  if (qIdx>=total) { showResult(total); return; }
+  const qs=window._currentQs||[];
+  const total=qs.length;
+  if (qIdx>=total) { showResult(window._sesBaseTotal||total); return; }
   const q=qs[qIdx];
   const titles={grammar:'📖 Gramer',artikel:'🏷️ Artikel',quiz:'📝 Mini Sınav'};
+  const isRetry = q._retry ? ' <span style="font-size:12px;color:var(--red);font-family:var(--font-mono)">[Tekrar]</span>' : '';
+  const istelc = q.type==='telc';
   document.getElementById('ex-content').innerHTML=`
-    <div class="ex-topbar"><div class="ex-title">${titles[curEx]||'Alıştırma'}</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
-    <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${(qIdx/total)*100}%"></div></div><span class="ex-progress-text">${qIdx+1} / ${total}</span></div>
-    <div class="question-area"><div class="question-label">Soru ${qIdx+1}</div><div class="question-text">${q.q}</div></div>
-    <div class="options-grid" id="opts"></div>
+    <div class="ex-topbar"><div class="ex-title">${titles[curEx]||'Alıştırma'}${isRetry}</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+    <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${total>0?(qIdx/total)*100:0}%"></div></div><span class="ex-progress-text">${qIdx+1} / ${total}</span></div>
+    <div class="question-area"><div class="question-label">${istelc?'TELC Tarzı Soru':'Soru '+(qIdx+1)}</div><div class="question-text" style="${istelc?'font-size:15px;line-height:1.7':''}">
+    ${q.type==='fill' ? q.q.replace('___','<span style="display:inline-block;min-width:80px;border-bottom:2px solid var(--gold);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>') : q.q}
+    </div></div>
+    ${q.type==='fill' ? renderFillInput() : '<div class="options-grid" id="opts"></div>'}
     <div class="feedback-box" id="feedback"></div>
     <div class="action-row" id="action-row" style="display:none"><button class="btn-primary" onclick="nextQ()">Sonraki →</button></div>`;
-  const expEsc=encodeURIComponent(q.exp||'');
-  q.opts.forEach((opt,i)=>{document.getElementById('opts').innerHTML+=`<button class="option-btn" onclick="checkMCQ(${i},${q.ans},'${expEsc}')">${opt}</button>`;});
+  if (q.type==='fill') {
+    document.getElementById('fill-submit').onclick = () => checkFill(q.correct, q.exp, qIdx);
+    document.getElementById('fill-input').addEventListener('keydown', e=>{ if(e.key==='Enter') checkFill(q.correct, q.exp, qIdx); });
+  } else {
+    q.opts.forEach((opt,i)=>{document.getElementById('opts').innerHTML+=`<button class="option-btn" onclick="checkMCQ(${i},${q.ans},${qIdx})">${opt}</button>`;});
+  }
 }
 
-function checkMCQ(chosen,correct,expEnc) {
-  const exp=decodeURIComponent(expEnc);
+function renderFillInput() {
+  return `<div style="margin-bottom:18px;display:flex;gap:10px;align-items:center">
+    <input id="fill-input" type="text" class="text-input" style="min-height:auto;padding:12px 16px;font-size:16px;flex:1" placeholder="Cevabınızı yazın..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="fill-submit" class="btn-primary" style="white-space:nowrap">Kontrol Et</button>
+  </div>`;
+}
+
+function checkFill(correct, exp, qIndex) {
+  const input = document.getElementById('fill-input');
+  if (!input) return;
+  const val = input.value.trim();
+  const ok = val.toLowerCase() === correct.toLowerCase();
+  input.disabled = true;
+  input.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+  document.getElementById('fill-submit').disabled = true;
+  if(ok){sesScore++;S.xp+=12;S.correct++;}
+  else { addRetry(qIndex); }
+  S.total++;sesTotal++;
+  const qs=window._currentQs||[];
+  trackStats(qs[qIndex], ok);
+  document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
+  document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Doğru!':'❌ Yanlış! Doğru cevap: <strong>'+correct+'</strong>'}</div><div class="feedback-body">${exp||''}</div>`;
+  document.getElementById('action-row').style.display='flex';
+  updateUI(); save();
+}
+
+function checkMCQ(chosen,correct,qIndex) {
+  const qs=window._currentQs||[];
+  const exp=(qs[qIndex]&&qs[qIndex].exp)?qs[qIndex].exp:'';
   document.querySelectorAll('.option-btn').forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct');else if(i===chosen&&chosen!==correct)b.classList.add('wrong');});
   const ok=chosen===correct;
   if(ok){sesScore++;S.xp+=10;S.correct++;}
+  else { addRetry(qIndex); }
   S.total++;sesTotal++;
+  trackStats(qs[qIndex], ok);
   document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
   document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Doğru!':'❌ Yanlış!'}</div><div class="feedback-body">${exp}</div>`;
   document.getElementById('action-row').style.display='flex';
   updateUI(); save();
+}
+
+// Yanlış soruyu listeye tekrar ekle
+function addRetry(qIndex) {
+  const qs=window._currentQs||[];
+  if (!qs[qIndex]) return;
+  const retryQ = {...qs[qIndex], _retry: true};
+  qs.push(retryQ);
+}
+
+// Konu ve zorluk bazlı istatistik takibi
+function trackStats(q, ok) {
+  if (!q) return;
+  if (!S.topicStats) S.topicStats = {};
+  if (!S.diffStats) S.diffStats = {1:{correct:0,total:0},2:{correct:0,total:0},3:{correct:0,total:0}};
+  const topic = q.topic || 'diger';
+  if (!S.topicStats[topic]) S.topicStats[topic] = {correct:0, total:0};
+  S.topicStats[topic].total++;
+  if (ok) S.topicStats[topic].correct++;
+  const diff = q.diff || 1;
+  if (!S.diffStats[diff]) S.diffStats[diff] = {correct:0, total:0};
+  S.diffStats[diff].total++;
+  if (ok) S.diffStats[diff].correct++;
+}
+
+// Özet/Analiz sayfası
+const TOPIC_NAMES = {
+  sein_haben:'sein & haben', fragen:'Soru Kelimeleri', negation:'Olumsuzluk',
+  verben:'Fiil Çekimi', wortstellung:'Kelime Sırası', artikel:'Artikel & Çoğul',
+  possessiv:'İyelik Zamirleri', praepos:'Edatlar', modal:'Modal Fiiller',
+  begr:'Selamlaşma', zahlen:'Sayılar & Saat', lesen:'Okuma & Anlama',
+  perfekt:'Perfekt (Geçmiş)', praeteritum:'Präteritum', kasus:'Akkusativ & Dativ',
+  trennbar:'Ayrılabilen Fiiller', komparativ:'Karşılaştırma', konjunktionen:'Bağlaçlar', diger:'Diğer'
+};
+
+function renderSummary() {
+  document.getElementById('sm-xp').textContent = S.xp;
+  document.getElementById('sm-streak').textContent = S.streak;
+  document.getElementById('sm-words').textContent = S.wordsLearned;
+  const pct = S.total>0?Math.round((S.correct/S.total)*100)+'%':'—';
+  document.getElementById('sm-accuracy').textContent = pct;
+
+  const stats = S.topicStats || {};
+  const entries = Object.entries(stats).filter(([k,v])=>v.total>=2);
+  entries.sort((a,b)=>(b[1].correct/b[1].total)-(a[1].correct/a[1].total));
+
+  const strong = entries.filter(([k,v])=>v.total>=2&&(v.correct/v.total)>=0.7);
+  const weak = entries.filter(([k,v])=>v.total>=2&&(v.correct/v.total)<0.7);
+
+  const topicHTML = (list, color) => list.length===0
+    ? '<p style="color:var(--text3);font-size:13px">Henüz yeterli veri yok. Daha fazla alıştırma yap!</p>'
+    : list.map(([k,v])=>{
+        const pct=Math.round((v.correct/v.total)*100);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:13px">${TOPIC_NAMES[k]||k}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:80px;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:12px;color:${color}">${pct}%</span>
+          </div>
+        </div>`;
+      }).join('');
+
+  document.getElementById('sm-strong').innerHTML = topicHTML(strong, 'var(--green)');
+  document.getElementById('sm-weak').innerHTML = topicHTML(weak.slice(0,5), 'var(--red)');
+
+  // Zorluk dağılımı
+  const diffs = S.diffStats || {};
+  const diffLabels = {1:'😊 Kolay', 2:'🤔 Orta', 3:'😤 Zor'};
+  const diffColors = {1:'var(--green)', 2:'var(--gold)', 3:'var(--red)'};
+  document.getElementById('sm-difficulty').innerHTML = [1,2,3].map(d=>{
+    const st=diffs[d]||{correct:0,total:0};
+    const p=st.total>0?Math.round((st.correct/st.total)*100):0;
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="font-size:13px;min-width:90px">${diffLabels[d]}</span>
+      <div style="flex:1;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+        <div style="width:${p}%;height:100%;background:${diffColors[d]};border-radius:4px;transition:width 0.8s"></div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:${diffColors[d]};min-width:60px">${p}% (${st.total} soru)</span>
+    </div>`;
+  }).join('');
+}
+
+async function getAIAdvice() {
+  document.getElementById('advice-loading').classList.add('show');
+  document.getElementById('sm-advice').style.display = 'none';
+  const stats = S.topicStats || {};
+  const weak = Object.entries(stats).filter(([k,v])=>v.total>=2&&(v.correct/v.total)<0.7)
+    .map(([k,v])=>`${TOPIC_NAMES[k]||k}: ${Math.round((v.correct/v.total)*100)}%`).join(', ');
+  const strong = Object.entries(stats).filter(([k,v])=>v.total>=2&&(v.correct/v.total)>=0.8)
+    .map(([k,v])=>`${TOPIC_NAMES[k]||k}: ${Math.round((v.correct/v.total)*100)}%`).join(', ');
+  const diffStats = S.diffStats || {};
+  const diffSummary = [1,2,3].map(d=>{const s=diffStats[d]||{correct:0,total:0};return `Kolay/Orta/Zor-${d}: ${s.total>0?Math.round((s.correct/s.total)*100):0}% (${s.total} soru)`;}).join(', ');
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514", max_tokens:800,
+        system:`Sen deneyimli bir Almanca öğretmenisin. Öğrencinin istatistiklerine bakarak kısa, net ve motive edici Türkçe tavsiye ver. Maksimum 5-6 cümle. Şu yapıyı kullan:
+📌 DURUM: (kısa özet)
+🎯 ODAKLAN: (en çok hangi konuya)
+💡 ÖNCE YAP: (somut 1-2 adım)
+🌟 GÜÇLÜ YÖN: (motivasyon)`,
+        messages:[{role:"user", content:`Öğrenci istatistikleri:
+Genel doğruluk: ${S.total>0?Math.round((S.correct/S.total)*100):0}%
+Toplam çözülen soru: ${S.total}
+Zayıf konular: ${weak||'Henüz yeterli veri yok'}
+Güçlü konular: ${strong||'Henüz yeterli veri yok'}
+Zorluk dağılımı: ${diffSummary}
+Seviye: ${S.level}
+XP: ${S.xp}
+Gün serisi: ${S.streak}`}]
+      })
+    });
+    const data = await resp.json();
+    const txt = data.content?.[0]?.text || 'Tavsiye alınamadı.';
+    document.getElementById('advice-loading').classList.remove('show');
+    document.getElementById('sm-advice').style.display = 'block';
+    document.getElementById('sm-advice').textContent = txt;
+  } catch(e) {
+    document.getElementById('advice-loading').classList.remove('show');
+    document.getElementById('sm-advice').style.display = 'block';
+    document.getElementById('sm-advice').textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+  }
 }
 
 function renderSentenceQ() {
@@ -747,6 +1383,23 @@ function renderSRSQ() {
   const vocab=S.vocab||VOCAB_DEFAULT,due=vocab.filter(w=>w.srs<2);
   if(qIdx>=due.length||!due.length){showResult(Math.max(due.length,1));return;}
   const v=due[qIdx];
+  const wi=vocab.findIndex(x=>x.word===v.word);
+  // Alternate: even=MCQ, odd=keyboard type-in
+  const useKeyboard = qIdx%2===1;
+  if (useKeyboard) {
+    document.getElementById('ex-content').innerHTML=`
+      <div class="ex-topbar"><div class="ex-title">🔁 SRS Tekrar</div><button class="ex-close" onclick="closeExercise()">✕ Kapat</button></div>
+      <div class="ex-progress"><div class="ex-progress-bar"><div class="ex-progress-fill" style="width:${(qIdx/due.length)*100}%"></div></div><span class="ex-progress-text">${qIdx+1}/${due.length}</span></div>
+      <div class="question-area"><div class="question-label">Bu kelimenin Türkçe anlamını yaz:</div><div class="question-text" style="text-align:center;font-size:26px;font-family:var(--font-display)">${v.word}</div></div>
+      <div style="margin-bottom:18px;display:flex;gap:10px">
+        <input id="srs-input" type="text" class="text-input" style="min-height:auto;padding:12px 16px;font-size:15px;flex:1" placeholder="Türkçe anlamı..." autocomplete="off" spellcheck="false">
+        <button class="btn-primary" onclick="checkSRSKeyboard(${wi})">Kontrol</button>
+      </div>
+      <div class="feedback-box" id="feedback"></div>
+      <div class="action-row" id="action-row" style="display:none"><button class="btn-primary" onclick="nextQ()">Sonraki →</button></div>`;
+    document.getElementById('srs-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkSRSKeyboard(wi);});
+    return;
+  }
   let opts=vocab.filter(w=>w.word!==v.word).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.tr);
   opts.push(v.tr);opts.sort(()=>Math.random()-0.5);
   const correct=opts.indexOf(v.tr);
@@ -757,9 +1410,27 @@ function renderSRSQ() {
     <div class="options-grid" id="opts"></div>
     <div class="feedback-box" id="feedback"></div>
     <div class="action-row" id="action-row" style="display:none"><button class="btn-primary" onclick="nextQ()">Sonraki →</button></div>`;
-  const wi=vocab.findIndex(x=>x.word===v.word);
   opts.forEach((opt,i)=>{document.getElementById('opts').innerHTML+=`<button class="option-btn" onclick="checkSRS(${i},${correct},${wi})">${opt}</button>`;});
 }
+
+window.checkSRSKeyboard = (wi) => {
+  const vocab=S.vocab||VOCAB_DEFAULT, v=vocab[wi];
+  if (!v) return;
+  const input=document.getElementById('srs-input');
+  if (!input) return;
+  const val=input.value.trim().toLowerCase();
+  // Accept if any part of translation matches
+  const answers = v.tr.toLowerCase().split(',').map(x=>x.trim());
+  const ok = answers.some(a=>val===a||a.includes(val)&&val.length>=3);
+  input.disabled=true;
+  input.style.borderColor=ok?'var(--green)':'var(--red)';
+  if(v){v.srs=Math.min((v.srs||0)+(ok?1:0),3);if(ok&&v.srs>=2)S.wordsLearned=Math.min(S.wordsLearned+1,vocab.length);}
+  if(ok){sesScore++;S.xp+=10;S.correct++;}S.total++;sesTotal++;
+  document.getElementById('feedback').className='feedback-box show '+(ok?'correct-fb':'wrong-fb');
+  document.getElementById('feedback').innerHTML=`<div class="feedback-header">${ok?'✅ Doğru!':'❌ Yanlış!'}</div><div class="feedback-body">${v.word} = <strong>${v.tr}</strong><br><em>${(v.ex||'').split('\n')[0]}</em></div>`;
+  document.getElementById('action-row').style.display='flex';
+  updateUI();save();
+};
 window.checkSRS=(chosen,correct,wi)=>{
   document.querySelectorAll('.option-btn').forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct');else if(i===chosen&&chosen!==correct)b.classList.add('wrong');});
   const ok=chosen===correct,vocab=S.vocab||VOCAB_DEFAULT,v=vocab[wi];
