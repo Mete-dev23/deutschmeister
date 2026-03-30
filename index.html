@@ -1690,7 +1690,14 @@ function checkSentClick() {
   var q = window._cq;
   if (!q) return;
   var correct = q.c;
-  var ok = built === correct;
+  // Normalize: trim spaces, fix "word ." -> "word."
+  var normalize = function(s) {
+    return s.trim()
+      .replace(/\s+([.!?,;:])/g, "$1")  // "Thomas ." -> "Thomas."
+      .replace(/\s+/g, " ")             // multiple spaces -> one
+      .toLowerCase();
+  };
+  var ok = normalize(built) === normalize(correct);
   if (ok) { sesScore++; S.xp+=15; S.correct++; }
   S.total++; sesTotal++;
   document.getElementById("fb").className = "fb-box show "+(ok?"ok-fb":"err-fb");
