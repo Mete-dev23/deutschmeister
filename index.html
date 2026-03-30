@@ -1659,6 +1659,68 @@ function sentRemove() {
   if (window._ss&&window._ss.length) { window._ss.pop(); drawSent(); }
 }
 function sentClear() { window._ss=[]; drawSent(); }
+
+// ── V2 DENETIMI ──────────────────────────────────────────────────────────────
+// Almancada V2 kurali: fiil daima 2. konumda.
+// "Ich gehe heute in die Schule." = "Heute gehe ich in die Schule." ikisi de dogru.
+function normalizeDE(s) {
+  return s.trim()
+    .replace(/ ([.!?,;?])/g, "$1")   // "Thomas ." -> "Thomas."
+    .replace(/  +/g, " ")             // cift bosluk
+    .toLowerCase()
+    .replace(/ß/g, "ss")              // Fußball = Fussball
+    .replace(/ä/g, "ae")              // Bäcker = Baecker (optional)
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue");
+}
+
+function isV2Match(built, correct) {
+  var nb = normalizeDE(built);
+  var nc = normalizeDE(correct);
+  if (nb === nc) return true;
+
+  // Remove trailing punctuation for analysis
+  var punct = "";
+  var core = nc.replace(/[.!?]$/, function(m){ punct = m; return ""; }).trim();
+  var tokens = core.split(" ");
+  if (tokens.length < 3) return nb === nc;
+
+  // V2 rule: verb is always at position 2 (index 1)
+  var verb = tokens[1];
+  var subject = tokens[0];
+  var rest = tokens.slice(2);
+  var alternatives = [];
+
+  // 1. Original order
+  alternatives.push(core + punct);
+
+  // 2. Single token from rest moves to front-field
+  rest.forEach(function(elem, i) {
+    var newRest = [subject].concat(rest.filter(function(_, j){ return j !== i; }));
+    alternatives.push(elem + " " + verb + " " + newRest.join(" ") + punct);
+  });
+
+  // 3. Multi-word front-field: consecutive tokens from rest move to front
+  // e.g. "jeden Tag" (2 tokens) -> "Jeden Tag lerne ich Deutsch."
+  for (var len = 2; len <= rest.length; len++) {
+    for (var start = 0; start <= rest.length - len; start++) {
+      var frontElems = rest.slice(start, start + len);
+      var remaining = rest.filter(function(_, j){ return j < start || j >= start + len; });
+      var newRest2 = [subject].concat(remaining);
+      alternatives.push(frontElems.join(" ") + " " + verb + " " + newRest2.join(" ") + punct);
+    }
+  }
+
+  // 4. Question form: verb first
+  if (punct === "?") {
+    alternatives.push(verb + " " + subject + " " + rest.join(" ") + "?");
+  }
+
+  return alternatives.some(function(alt) {
+    return normalizeDE(alt) === nb;
+  });
+}
+
 function checkSentType() {
   var inp = document.getElementById("sent-input");
   if (!inp) return;
@@ -1667,8 +1729,7 @@ function checkSentType() {
   if (!q) return;
   var correct = q.c;
   // Flexible check: ignore case, trailing punct optional
-  var normalize = function(s){ return s.trim().replace(/ ([.!?,;?])/g,"$1").replace(/  +/g," ").toLowerCase(); };
-  var ok = normalize(val) === normalize(correct);
+  var ok = isV2Match(val, correct);
   inp.disabled = true;
   inp.style.borderColor = ok ? "var(--green)" : "var(--red)";
   if (ok) { sesScore++; S.xp+=18; S.correct++; }
@@ -1690,14 +1751,7 @@ function checkSentClick() {
   var q = window._cq;
   if (!q) return;
   var correct = q.c;
-  // Normalize: trim spaces, fix "word ." -> "word."
-  var normalize = function(s) {
-    return s.trim()
-      .replace(/\s+([.!?,;:])/g, "$1")  // "Thomas ." -> "Thomas."
-      .replace(/\s+/g, " ")             // multiple spaces -> one
-      .toLowerCase();
-  };
-  var ok = normalize(built) === normalize(correct);
+  var ok = isV2Match(built, correct);
   if (ok) { sesScore++; S.xp+=15; S.correct++; }
   S.total++; sesTotal++;
   document.getElementById("fb").className = "fb-box show "+(ok?"ok-fb":"err-fb");
