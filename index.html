@@ -1223,6 +1223,7 @@ function initGoogleAuth() {
             document.getElementById("uname").textContent = u.name||"Kullanici";
             document.getElementById("uemail").textContent = u.email||"Drive bagli";
             document.getElementById("uavatar").textContent = (u.name||"?")[0].toUpperCase();
+            try { localStorage.setItem("dm_user", JSON.stringify({name:u.name,email:u.email,avatar:(u.name||"?")[0].toUpperCase()})); } catch(e) {}
           }).catch(function(){
             document.getElementById("uname").textContent = "Google Kullanici";
             document.getElementById("uemail").textContent = "Drive bagli";
@@ -1296,11 +1297,11 @@ function saveDriveFile(body) {
     .catch(function(){ setSS("error","Drive kayit hatasi"); });
 }
 function signInWithGoogle() {
-  if (tokenClient) { tokenClient.requestAccessToken({prompt:"consent"}); return; }
+  if (tokenClient) { tokenClient.requestAccessToken({prompt:""}); return; }
   setSS("syncing","Google yukleniyor...");
   setTimeout(function(){
     initGoogleAuth();
-    if (tokenClient) tokenClient.requestAccessToken({prompt:"consent"});
+    if (tokenClient) tokenClient.requestAccessToken({prompt:""});
     else skipAuth();
   }, 1500);
 }
@@ -1587,7 +1588,7 @@ function renderSentQ() {
     window._sentQs._level = S.level;
     window._sentQIdx = 0;
   }
-  var total = filtered.length;
+  var total = window._sentQs ? window._sentQs.length : filtered.length;
   var localIdx = window._sentQIdx||0;
   if (localIdx>=total) { showResult(total); window._sentQs=null; return; }
   var q = window._sentQs[localIdx];
@@ -1604,7 +1605,7 @@ function drawSent() {
   var sel = window._ss||[];
   var lvlOrder = {A1:1,A2:2,B1:3,B2:4,C1:5};
   var ul = lvlOrder[S.level]||1;
-  var total = SQ.filter(function(x){return lvlOrder[x.lv||"A1"]<=ul;}).length;
+  var total = window._sentQs ? window._sentQs.length : SQ.filter(function(x){return lvlOrder[x.lv||"A1"]<=ul;}).length;
   var localIdx = window._sentQIdx||0;
   var modeLabel = q.mode==="type"
     ? "<span style=\"font-size:11px;color:var(--blue2);font-family:var(--fm)\">Yazma Modu</span>"
@@ -2168,20 +2169,55 @@ function getAIAdvice() {
 }
 window.addEventListener("load", function() {
   var saved = localStorage.getItem(SKEY);
+  var savedUser = null;
+  try { savedUser = JSON.parse(localStorage.getItem("dm_user")||"null"); } catch(e) {}
+
   if (saved) {
     document.getElementById("auth-overlay").classList.add("hidden");
     loadLocal();
-    setSS("synced","Yerel kayit yuklendi - "+nowT());
-    document.getElementById("uname").textContent = "Hos geldin!";
-    document.getElementById("uemail").textContent = "Drive icin giris yap";
-    document.getElementById("sbtn").onclick = function(){ document.getElementById("auth-overlay").classList.remove("hidden"); };
+
+    if (savedUser) {
+      // Restore user info from last session
+      document.getElementById("uname").textContent = savedUser.name||"Kullanici";
+      document.getElementById("uemail").textContent = savedUser.email||"Drive icin giriş yap";
+      document.getElementById("uavatar").textContent = savedUser.avatar||"?";
+      setSS("syncing", "Drive yeniden baglaniyor...");
+    } else {
+      document.getElementById("uname").textContent = "Hos geldin!";
+      document.getElementById("uemail").textContent = "Drive icin giris yap";
+      setSS("error", "Drive baglantisi kesildi");
+    }
+
+    // Try silent token refresh (no prompt)
+    setTimeout(function() {
+      try {
+        initGoogleAuth();
+        if (tokenClient) {
+          // Try silent auth first (no login screen if still logged in)
+          tokenClient.requestAccessToken({prompt:""});
+        }
+      } catch(e) {
+        setSS("error", "Drive baglantisi kesildi - Kaydet butonuna tikla");
+      }
+    }, 1200);
+
+    // Fallback button
+    document.getElementById("sbtn").onclick = function() {
+      try {
+        initGoogleAuth();
+        if (tokenClient) tokenClient.requestAccessToken({prompt:"consent"});
+        else document.getElementById("auth-overlay").classList.remove("hidden");
+      } catch(e) {
+        document.getElementById("auth-overlay").classList.remove("hidden");
+      }
+    };
     document.getElementById("sbtn").textContent = "Drive";
   } else {
     setSS("error","Baglanti bekleniyor");
   }
+
   if (!S.vocab) S.vocab = JSON.parse(JSON.stringify(VOCAB));
   updateUI(); loadFC();
-  setTimeout(function(){ try { initGoogleAuth(); } catch(e) {} }, 1000);
 });
 
 </script>
