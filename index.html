@@ -1667,7 +1667,7 @@ function checkSentType() {
   if (!q) return;
   var correct = q.c;
   // Flexible check: ignore case, trailing punct optional
-  var normalize = function(s){ return s.toLowerCase().replace(/[.?!,]+$/,"").trim(); };
+  var normalize = function(s){ return s.trim().replace(/ ([.!?,;?])/g,"$1").replace(/  +/g," ").toLowerCase(); };
   var ok = normalize(val) === normalize(correct);
   inp.disabled = true;
   inp.style.borderColor = ok ? "var(--green)" : "var(--red)";
