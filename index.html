@@ -1378,6 +1378,14 @@ function startEx(type) {
     window._sentQs = null;
     window._sentQIdx = 0;
   }
+  if (type==="writing") {
+    window._wqList = null;
+    window._wqIdx = 0;
+  }
+  if (type==="quiz") {
+    startQuiz();
+    return;
+  }
   var allQs = getQs();
 
   // Anti-repeat: track recently seen questions per exercise type
@@ -1537,6 +1545,9 @@ function nextQ() {
   if (curEx==="sentence") {
     window._sentQIdx = (window._sentQIdx||0) + 1;
     renderSentQ();
+  } else if (curEx==="writing") {
+    window._wqIdx = (window._wqIdx||0) + 1;
+    renderWriteQ();
   } else {
     qIdx++;
     renderQ();
@@ -1762,39 +1773,169 @@ function checkSentClick() {
   updateUI(); accessToken ? saveDrive() : save();
 }
 function renderWriteQ() {
-  var prompts = [
-    {p:"Kendini kisaca tanit. (Isim, nereden oldugunu, kac yasinda oldugunu)",h:"Ich heisse... / Ich komme aus... / Ich bin ... Jahre alt."},
-    {p:"Favori rengin ne? Neden seviyorsun?",h:"Meine Lieblingsfarbe ist... / Ich mag..."},
-    {p:"Ailenden birisini tanit.",h:"Das ist mein/meine... / Er/Sie heisst... / Er/Sie ist..."}
+  var WQ = [
+    // === TÜR 1: ALMANCAYA ÇEVİR (uzun cümleler) ===
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Her sabah saat yedide kalkıyorum ve kahvaltı yapıyorum.", cevap:"Ich stehe jeden Morgen um sieben Uhr auf und frühstücke.", h:"aufstehen (trennbar) + um + Uhrzeit + und + frühstücken"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Annem bir hastanede hemşire olarak çalışıyor.", cevap:"Meine Mutter arbeitet als Krankenschwester in einem Krankenhaus.", h:"arbeiten als + Beruf + in einem/einer + Ort"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Geçen hafta sinemaya gittim ve çok güzel bir film izledim.", cevap:"Letzte Woche bin ich ins Kino gegangen und habe einen sehr schönen Film gesehen.", h:"Perfekt: bin gegangen / habe gesehen — letzte Woche = geçen hafta"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Almanca öğreniyorum çünkü Almanya'da çalışmak istiyorum.", cevap:"Ich lerne Deutsch, weil ich in Deutschland arbeiten möchte.", h:"weil + fiil sona: weil ich ... arbeiten möchte"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Bugün hava çok soğuk, bu yüzden evde kalmak istiyorum.", cevap:"Heute ist es sehr kalt, deshalb möchte ich zu Hause bleiben.", h:"deshalb = bu yüzden — möchte + Infinitiv sona"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Süpermarkette ekmek, süt ve meyve aldım.", cevap:"Ich habe im Supermarkt Brot, Milch und Obst gekauft.", h:"Perfekt: habe gekauft — im Supermarkt (Dativ)"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Kardeşim şu an üniversitede mühendislik okuyor.", cevap:"Mein Bruder studiert jetzt Ingenieurwesen an der Universität.", h:"studieren = üniversitede okumak — an der Universität (Dativ)"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Doktora gitmem lazım çünkü üç gündür ateşim var.", cevap:"Ich muss zum Arzt gehen, weil ich seit drei Tagen Fieber habe.", h:"müssen + Infinitiv — seit + Dativ = -den beri — Fieber haben"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Bu akşam arkadaşlarımla bir restoranda yemek yiyeceğiz.", cevap:"Heute Abend werden wir mit meinen Freunden in einem Restaurant essen.", h:"Futur: werden + Infinitiv — mit + Dativ — in einem Restaurant"},
+    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Dün çok yorgundum, bu yüzden erken uyudum.", cevap:"Gestern war ich sehr müde, deshalb bin ich früh schlafen gegangen.", h:"Prateritum: war (sein) — Perfekt: bin gegangen — deshalb"},
+    // === TÜR 2: TÜRKÇEYE ÇEVİR ===
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Jeden Morgen trinke ich zwei Tassen Kaffee und lese die Zeitung.", cevap:"Her sabah iki fincan kahve içiyorum ve gazete okuyorum.", h:"jeden Morgen=her sabah, Tasse=fincan, Zeitung=gazete"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Meine Schwester hat letzte Woche geheiratet und wohnt jetzt in München.", cevap:"Kız kardeşim geçen hafta evlendi ve şimdi Münih'te oturuyor.", h:"heiraten=evlenmek, letzte Woche=geçen hafta, wohnen=oturmak"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Ich lerne seit zwei Jahren Deutsch und kann schon gut sprechen.", cevap:"İki yıldır Almanca öğreniyorum ve artık iyi konuşabiliyorum.", h:"seit=...den beri, schon=artık/zaten, können=yapabilmek"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Der Zug fährt um 14 Uhr 30 ab und kommt um 17 Uhr in Berlin an.", cevap:"Tren saat 14.30'da kalkıyor ve saat 17'de Berlin'e varıyor.", h:"abfahren=kalkmak, ankommen=varmak, um=saat (zaman)"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Können Sie mir bitte sagen, wo die nächste Apotheke ist?", cevap:"Bana en yakın eczanenin nerede olduğunu söyleyebilir misiniz?", h:"können=yapabilmek, nächste=en yakın, Apotheke=eczane"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Ich habe Kopfschmerzen und möchte gern ein Aspirin kaufen.", cevap:"Baş ağrım var ve bir Aspirin satın almak istiyorum.", h:"Kopfschmerzen=baş ağrısı, möchten=istemek, kaufen=satın almak"},
+    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Das Restaurant ist leider geschlossen. Es öffnet erst morgen wieder.", cevap:"Restoran maalesef kapalı. Yarın ancak yeniden açılıyor.", h:"leider=maalesef, geschlossen=kapalı, erst=ancak/yalnızca"},
+    // === TÜR 3: SERBEST YAZMA (zengin konular) ===
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Dünkü gününü anlat. Ne yaptın, nereye gittin, kiminle görüştün?", cevap:"", h:"Perfekt kullan: Ich habe ... gemacht / Ich bin ... gegangen — gestern=dün"},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Yaşadığın şehri tanıt. Şehirde ne var, nasıl bir yer, seviyor musun?", cevap:"", h:"Es gibt... (var) — Die Stadt ist... — Ich wohne in... seit... Jahren"},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Bir arkadaşına e-posta yaz ve onu hafta sonu buluşmaya davet et.", cevap:"", h:"Hallo ...! / Möchtest du...? / Wir können... / Ich freue mich auf dich!"},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Bir süpermarkette alışveriş yapıyorsun. Kasiyerle diyalog yaz.", cevap:"", h:"Guten Tag! / Ich hätte gern... / Was kostet...? / Mit Karte bitte."},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Doktora gittin. Şikayetini anlat ve doktorun tavsiyelerini yaz.", cevap:"", h:"Ich habe Schmerzen in... / Seit wann? / Nehmen Sie... / Ich empfehle..."},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Gelecek yaz için tatil planını anlat. Nereye gideceksin, ne yapacaksın?", cevap:"", h:"Futur: Ich werde... — Im Sommer fahre ich nach... — Ich möchte..."},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Yeni bir işe başladın. İlk günün nasıldı? Meslektaşların nasıl?", cevap:"", h:"Mein erster Tag war... — Die Kollegen sind... — Ich muss..."},
+    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Ev arkadaşı arıyorsun. Kendini ve aradığın evi tanıtan ilan yaz.", cevap:"", h:"Ich suche... / Ich bin... Jahre alt / Die Wohnung soll... haben / Miete bis..."},
+    {tip:"yaz", p:"Almanca yaz (2-3 cümle):", soru:"Bu Almanca cümleyi düzelt ve neden hatalı olduğunu açıkla: 'Ich bin 25 Jahre und komme aus die Türkei.'", cevap:"", h:"Jahre alt (eksik) — aus + Dativ: aus der Türkei (die→der)"},
+    // === TÜR 4: BOŞLUK DOLDUR (uzun cümleler) ===
+    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"Ich ___ seit drei Jahren in Berlin und ___ als Ingenieur. Meine Frau ___ aus der Türkei und ___ Deutsch.", cevap:"wohne / arbeite / kommt / lernt", h:"wohnen(ich wohne) / arbeiten(ich arbeite) / kommen(sie kommt) / lernen(sie lernt)"},
+    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"___ Montag ___ ich zur Arbeit. Der Bus ___ um 8 Uhr ___.", cevap:"Am / fahre / fährt / ab", h:"Am Montag (zaman) / fahren(ich fahre) / abfahren trennbar: fährt...ab"},
+    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"Ich ___ gestern sehr müde, ___ ich nicht schlafen ___.", cevap:"war / aber / konnte", h:"war=sein Prateritum / aber=ama / konnte=können Prateritum (yapamadım)"},
   ];
-  var q = prompts[qIdx%prompts.length];
-  window._wp = q.p;
+
+  // Anti-repeat: shuffle and track seen
+  if (!window._wqList || window._wqList.length === 0) {
+    if (!window._seenWQ) window._seenWQ = [];
+    var unseen = WQ.filter(function(_, i){ return window._seenWQ.indexOf(i) < 0; });
+    if (unseen.length < 3) { window._seenWQ = []; unseen = WQ.slice(); }
+    window._wqList = unseen.sort(function(){ return Math.random() - 0.5; }).slice(0, 8);
+    window._wqList.forEach(function(q){ var i=WQ.indexOf(q); if(i>=0) window._seenWQ.push(i); });
+    window._wqIdx = 0;
+  }
+
+  var idx = window._wqIdx || 0;
+  if (idx >= window._wqList.length) {
+    showResult(window._wqList.length);
+    window._wqList = null;
+    return;
+  }
+  var q = window._wqList[idx];
+  window._wp = q;
+
+  // Tip badge
+  var tipMap = {tr2de:"TR → DE Çeviri", de2tr:"DE → TR Çeviri", yaz:"Serbest Yazma", bosuk:"Boşluk Doldur"};
+  var tipColor = {tr2de:"var(--blue2)", de2tr:"var(--green)", yaz:"var(--gold)", bosuk:"#b854e0"};
+  var tipBadge = "<span style='font-size:11px;font-family:var(--fm);color:"+tipColor[q.tip]+";margin-left:8px'>"+tipMap[q.tip]+"</span>";
+
   document.getElementById("ex-content").innerHTML =
-    '<div class="ex-topbar"><div class="ex-title">Yazma Alistirmasi</div><button class="ex-close" onclick="closeEx()">Kapat</button></div>'
-    +'<div class="q-area"><div class="q-label">Almanca yaz</div><div class="q-text">'+q.p+'</div><div class="q-hint">Ipucu: '+q.h+'</div></div>'
-    +'<textarea class="txt-area" id="wi" placeholder="Almanca cumlelerinizi buraya yazin..." rows="4"></textarea>'
-    +'<div class="fb-box" id="fb"></div>'
-    +'<div class="ai-load" id="ail"><div class="dot-pulse"><span></span><span></span><span></span></div> AI degerlendiriyor...</div>'
-    +'<div class="act-row"><button class="btn-p" id="wsbtn" onclick="checkWrite()">AIya Gonder</button><button class="btn-s" onclick="nextQ()">Atla</button></div>';
+    "<div class='ex-topbar'><div class='ex-title'>Yazma Alistirmasi"+tipBadge+"</div><button class='ex-close' onclick='closeEx()'>Kapat</button></div>"
+    +"<div class='ex-prog'><div class='ex-pbar'><div class='ex-pfill' style='width:"+(window._wqList.length>0?(idx/window._wqList.length)*100:0)+"%'></div></div><span class='ex-ptxt'>"+(idx+1)+"/"+window._wqList.length+"</span></div>"
+    +"<div class='q-area'><div class='q-label' style='color:"+tipColor[q.tip]+"'>"+q.p+"</div>"
+    +"<div class='q-text' style='font-size:16px;line-height:1.7'>"+q.soru+"</div>"
+    +(q.h?"<div class='q-hint'>Ipucu: "+q.h+"</div>":"")+"</div>"
+    +(q.cevap?"<div style='background:var(--sur3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text3)'>Bu soru icin beklenen cevap var — yazin ve kontrol edin.</div>":"")
+    +"<textarea class='txt-area' id='wi' placeholder='Almanca yaz...' rows='5'></textarea>"
+    +"<div class='fb-box' id='fb'></div>"
+    +"<div class='ai-load' id='ail'><div class='dot-pulse'><span></span><span></span><span></span></div> Degerlendirilyor...</div>"
+    +"<div class='act-row'><button class='btn-p' id='wsbtn' onclick='checkWrite()'>Kontrol Et</button><button class='btn-s' onclick='skipWrite()'>Atla</button></div>";
 }
+
+function skipWrite() {
+  window._wqIdx = (window._wqIdx||0) + 1;
+  renderWriteQ();
+}
+
 function checkWrite() {
   var text = document.getElementById("wi").value.trim();
   if (!text) return;
   document.getElementById("ail").classList.add("show");
   document.getElementById("wsbtn").disabled = true;
+  var q = window._wp;
 
   setTimeout(function() {
-    var result = evaluateGerman(text, window._wp, S.level);
+    var result;
+    // If question has an expected answer (tr2de / bosuk), check it
+    if (q && q.cevap && q.cevap.length > 0) {
+      result = evaluateWithAnswer(text, q);
+    } else {
+      // Free writing (yaz / de2tr) — use rule-based grammar check
+      result = evaluateGerman(text, q ? q.soru : "", S.level);
+    }
     document.getElementById("ail").classList.remove("show");
     document.getElementById("fb").className = "fb-box show ai-fb";
     document.getElementById("fb").innerHTML =
-      "<div class=\"fb-head\">Otomatik Degerlendirme</div>" +
-      "<div class=\"fb-body\" style=\"white-space:pre-line\">" + result.report + "</div>";
+      "<div class='fb-head'>Degerlendirme</div>"
+      +"<div class='fb-body' style='white-space:pre-line'>"+result.report+"</div>";
     S.xp += result.xp; S.total++; sesTotal++;
     updateUI(); accessToken ? saveDrive() : save();
     var btn = document.getElementById("wsbtn");
-    btn.textContent = "Sonraki"; btn.onclick = nextQ; btn.disabled = false;
-  }, 600);
+    btn.textContent = "Sonraki"; btn.disabled = false;
+    btn.onclick = function() {
+      window._wqIdx = (window._wqIdx||0) + 1;
+      renderWriteQ();
+    };
+  }, 500);
+}
+
+function evaluateWithAnswer(text, q) {
+  var report = "";
+  var xp = 10;
+  var userN = normalizeDE(text);
+
+  // For boşluk doldur: check each answer part
+  if (q.tip === "bosuk") {
+    var answers = q.cevap.split("/").map(function(a){ return normalizeDE(a.trim()); });
+    var correct = 0;
+    answers.forEach(function(a) {
+      if (userN.indexOf(a) >= 0) correct++;
+    });
+    var pct = Math.round((correct/answers.length)*100);
+    report += "PUAN: "+pct+"%\n\n";
+    if (correct === answers.length) {
+      report += "Mukemmel! Tum bosluklar dogru.\n";
+      xp = 20;
+    } else {
+      report += "Dogru: "+correct+"/"+answers.length+" bosluk\n\n";
+      report += "Beklenen cevaplar:\n  "+q.cevap+"\n\n";
+      report += "Ipucu: "+q.h;
+      xp = correct * 5;
+    }
+    return {report: report, xp: xp};
+  }
+
+  // For tr2de: compare with expected
+  var correctN = normalizeDE(q.cevap);
+  var isExact = userN === correctN;
+
+  // Partial match: check key words
+  var keyWords = q.cevap.toLowerCase().split(" ")
+    .filter(function(w){ return w.length > 3; });
+  var found = keyWords.filter(function(w){
+    return normalizeDE(w) && userN.indexOf(normalizeDE(w)) >= 0;
+  });
+  var matchPct = Math.round((found.length / Math.max(keyWords.length,1)) * 100);
+
+  if (isExact || matchPct >= 85) {
+    report += "PUAN: 10/10\n\nMukemmel! Cevabiniz dogru.\n";
+    xp = 20;
+  } else if (matchPct >= 60) {
+    report += "PUAN: 7/10\n\nIyi! Bazi hatalar var.\n\n";
+    report += "Beklenen cevap:\n  "+q.cevap+"\n\n";
+    report += "Ipucu: "+q.h;
+    xp = 12;
+  } else {
+    report += "PUAN: 4/10\n\nDevam et! Cevabiniz beklentiden uzak.\n\n";
+    report += "Dogru cevap:\n  "+q.cevap+"\n\n";
+    report += "Aciklama: "+q.h;
+    xp = 5;
+  }
+  return {report: report, xp: xp};
 }
 
 function evaluateGerman(text, prompt, level) {
@@ -2167,6 +2308,429 @@ function getAIAdvice() {
       document.getElementById("sm-advice").textContent = "Baglanti hatasi. Lutfen tekrar deneyin.";
     });
 }
+
+// ============================================================
+// A1 SEVİYE SINAVI — TELC/Goethe formatında
+// Toplam 100 puan, min geçme: 80
+// Bölümler: Okuma(30) + Boşluk Doldurma(25) + Çeviri(25) + Yazma(20)
+// ============================================================
+
+var SINAV_BOLUMLER = [
+
+  // ── BÖLÜM 1: OKUMA ANLAMA (30 puan, 6 soru × 5 puan) ──────────────────────
+  {bolum:"okuma", puan:5,
+   metin:"<i>Liebe Anna,<br>ich bin jetzt in Berlin! Die Stadt ist wunderschön und sehr groß. Ich wohne bei einer deutschen Familie in Charlottenburg. Sie sind sehr nett. Ich lerne jeden Tag Deutsch in einer Sprachschule. Der Kurs geht von 9 bis 13 Uhr. Nachmittags besuche ich die Stadt — gestern war ich im Museum und im Zoo. Das Wetter ist leider nicht so gut, es regnet oft. Aber ich bin sehr glücklich hier!<br>Liebe Grüße, Mia</i>",
+   soru:"Mia nerede yaşıyor?",
+   opts:["Bir otelde","Alman bir ailenin yanında","Arkadaşının evinde","Yurtta"],
+   ans:1, exp:"'Ich wohne bei einer deutschen Familie' = Alman bir ailenin yanında kalıyorum."},
+
+  {bolum:"okuma", puan:5,
+   metin:null,
+   soru:"Mia'nın dil kursu saat kaçta bitiyor?",
+   opts:["9:00","12:00","13:00","14:00"],
+   ans:2, exp:"'Der Kurs geht von 9 bis 13 Uhr' = Kurs 9'dan 13'e kadar."},
+
+  {bolum:"okuma", puan:5,
+   metin:null,
+   soru:"Mia dün nereye gitti?",
+   opts:["Sinemaya ve parka","Müzeye ve hayvanat bahçesine","Alışverişe","Okula"],
+   ans:1, exp:"'gestern war ich im Museum und im Zoo' = Dün müzede ve hayvanat bahçesindeydim."},
+
+  {bolum:"okuma", puan:5,
+   metin:"<i>STADTFEST BERLIN<br>Samstag, 15. Juni — 12:00 bis 22:00 Uhr<br>Ort: Alexanderplatz<br>Programm: Musik, Tanz, Essen aus aller Welt<br>Eintritt: KOSTENLOS!<br>Bei Regen findet das Fest in der Sporthalle statt.<br>Infos: www.stadtfest-berlin.de</i>",
+   soru:"Şehir festivali ne zaman başlıyor?",
+   opts:["Saat 10:00","Saat 12:00","Saat 15:00","Saat 22:00"],
+   ans:1, exp:"'12:00 bis 22:00 Uhr' — festival öğlen 12'de başlıyor."},
+
+  {bolum:"okuma", puan:5,
+   metin:null,
+   soru:"Yağmur yağarsa festival nerede yapılır?",
+   opts:["İptal edilir","Başka güne ertelenir","Spor salonunda","Kapalı çarşıda"],
+   ans:2, exp:"'Bei Regen findet das Fest in der Sporthalle statt.' = Yağmurda festival spor salonunda yapılır."},
+
+  {bolum:"okuma", puan:5,
+   metin:"<i>STELLENANGEBOT<br>Wir suchen: Verkäufer/in (Teilzeit, 20 Std/Woche)<br>Arbeitszeit: Montag–Freitag, 14:00–18:00 Uhr<br>Anforderungen: Gute Deutschkenntnisse, freundlich, pünktlich<br>Wir bieten: 12 Euro/Stunde, nette Kollegen, gute Lage<br>Bewerbung: jobs@bäckerei-schmidt.de</i>",
+   soru:"Bu iş için saatte ne kadar ücret ödeniyor?",
+   opts:["10 Euro","11 Euro","12 Euro","14 Euro"],
+   ans:2, exp:"'12 Euro/Stunde' = Saatte 12 Euro ödeniyor."},
+
+  // ── BÖLÜM 2: BOŞLUK DOLDURMA (25 puan, 5 soru × 5 puan) ───────────────────
+  {bolum:"bosuk", puan:5,
+   soru:"Ich ___ seit zwei Jahren in Hamburg und ___ dort als Ingenieur.",
+   cevap1:"wohne", cevap2:"arbeite",
+   exp:"wohnen 1. tekil: ich wohne — arbeiten 1. tekil: ich arbeite"},
+
+  {bolum:"bosuk", puan:5,
+   soru:"Am Montag ___ wir einen Ausflug nach Dresden ___. Der Bus ___ um 8 Uhr ab.",
+   cevap1:"machen", cevap2:"fährt",
+   exp:"machen 1. cogul: wir machen — abfahren trennbar 3. tekil: fährt...ab"},
+
+  {bolum:"bosuk", puan:5,
+   soru:"Gestern ___ ich sehr müde, weil ich bis Mitternacht ___ habe.",
+   cevap1:"war", cevap2:"gearbeitet",
+   exp:"sein Prateritum: war — arbeiten Partizip II: gearbeitet (haben+PP)"},
+
+  {bolum:"bosuk", puan:5,
+   soru:"Meine Schwester ___ seit drei Jahren Medizin. Sie ___ Ärztin werden.",
+   cevap1:"studiert", cevap2:"möchte",
+   exp:"studieren 3. tekil: studiert — möchten 3. tekil: möchte + Infinitiv"},
+
+  {bolum:"bosuk", puan:5,
+   soru:"Ich ___ kein Auto, deshalb ___ ich immer mit dem Bus zur Arbeit.",
+   cevap1:"habe", cevap2:"fahre",
+   exp:"haben 1. tekil: habe — fahren 1. tekil: fahre"},
+
+  // ── BÖLÜM 3: ÇEVİRİ (25 puan, 5 soru × 5 puan) ────────────────────────────
+  {bolum:"ceviri_tr2de", puan:5,
+   soru:"Eczane nerede? Biraz baş ağrım var.",
+   cevap:"Wo ist die Apotheke? Ich habe ein bisschen Kopfschmerzen.",
+   exp:"Wo ist die Apotheke? — Ich habe Kopfschmerzen (ein bisschen = biraz)"},
+
+  {bolum:"ceviri_tr2de", puan:5,
+   soru:"Almanya'da iki yıldır çalışıyorum ve Almancamı geliştirmek istiyorum.",
+   cevap:"Ich arbeite seit zwei Jahren in Deutschland und möchte mein Deutsch verbessern.",
+   exp:"seit zwei Jahren = iki yıldır — möchten + Infinitiv — verbessern = geliştirmek"},
+
+  {bolum:"ceviri_de2tr", puan:5,
+   soru:"Entschuldigung, können Sie mir sagen, wann der nächste Zug nach München fährt?",
+   cevap:"Affedersiniz, bana bir sonraki Münih treninin ne zaman kalktığını söyleyebilir misiniz?",
+   exp:"können Sie = yapabilir misiniz — wann = ne zaman — nächste = bir sonraki"},
+
+  {bolum:"ceviri_de2tr", puan:5,
+   soru:"Ich habe meine Hausaufgaben noch nicht gemacht, weil ich krank war.",
+   cevap:"Hasta olduğum için ev ödevlerimi henüz yapmadım.",
+   exp:"noch nicht = henüz değil — weil = çünkü/için — krank war = hastaydım"},
+
+  {bolum:"ceviri_tr2de", puan:5,
+   soru:"Geçen hafta sonu arkadaşlarımla birlikte bir piknik yaptık, hava çok güzeldi.",
+   cevap:"Letztes Wochenende haben wir zusammen mit meinen Freunden ein Picknick gemacht, das Wetter war sehr schön.",
+   exp:"letztes Wochenende — zusammen mit — haben gemacht (Perfekt) — war (Prateritum)"},
+
+  // ── BÖLÜM 4: YAZMA (20 puan, 2 görev × 10 puan) ───────────────────────────
+  {bolum:"yazma", puan:10,
+   soru:"Görev 1 — Kısa mesaj yaz (50-70 kelime):<br><br>Alman arkadaşın Lisa sana mesaj attı: 'Hallo! Wie geht es dir? Ich möchte dich am Samstag besuchen. Hast du Zeit?'<br><br>Cevap yaz: Durumunu anlat, Cumartesi müsait olup olmadığını söyle, buluşma yeri öner.",
+   exp:"Grüße + Ich bin... + Am Samstag... + Wir können uns... treffen"},
+
+  {bolum:"yazma", puan:10,
+   soru:"Görev 2 — Kısa tanıtım yaz (60-80 kelime):<br><br>Bir dil kursuna kaydolmak istiyorsun. Okula kendinle ilgili kısa bir e-posta yaz:<br>• Adın, yaşın, milliyet<br>• Mesleğin / ne okuduğun<br>• Neden Almanca öğrenmek istiyorsun<br>• Almanca seviyeni belirt",
+   exp:"Ich heiße... / Ich bin ... Jahre alt / Ich komme aus... / Ich arbeite als... / Ich lerne Deutsch weil... / Mein Niveau ist A1."}
+];
+
+// ── SINAV ENGINE ─────────────────────────────────────────────────────────────
+
+function startQuiz() {
+  curEx = "quiz";
+  checkStreak();
+  window._sinav = {
+    sorular: JSON.parse(JSON.stringify(SINAV_BOLUMLER)),
+    idx: 0,
+    puanlar: [],
+    toplamPuan: 0,
+    maxPuan: 100,
+    baslamaSaati: Date.now()
+  };
+  document.getElementById("home-cards").style.display = "none";
+  document.getElementById("ex-panel").style.display = "block";
+  renderSinavIntro();
+}
+
+function renderSinavIntro() {
+  document.getElementById("ex-content").innerHTML =
+    "<div class='ex-topbar'><div class='ex-title'>A1 Seviye Sinavi</div><button class='ex-close' onclick='closeEx()'>Vazgec</button></div>"
+    +"<div style='text-align:center;padding:30px 20px'>"
+    +"<div style='font-size:48px;margin-bottom:16px'>📝</div>"
+    +"<div style='font-family:var(--fd);font-size:28px;color:var(--gold);margin-bottom:12px'>A1 → A2 Hazirlik Sinavi</div>"
+    +"<div style='color:var(--text2);font-size:14px;line-height:1.8;margin-bottom:24px'>"
+    +"Bu sinav TELC ve Goethe A1 formatina gore hazirlanmistir.<br>"
+    +"<b style='color:var(--text)'>4 Bolum:</b> Okuma Anlama · Bosluk Doldurma · Ceviri · Yazma<br>"
+    +"<b style='color:var(--text)'>Toplam:</b> 100 puan &nbsp;|&nbsp; <b style='color:var(--green)'>Gecme puani: 80</b><br>"
+    +"<b style='color:var(--text)'>Sure:</b> Yaklasik 20-30 dakika"
+    +"</div>"
+    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:400px;margin:0 auto 28px'>"
+    +"<div style='background:var(--sur2);border-radius:10px;padding:12px;border:1px solid var(--bor)'><div style='font-size:11px;color:var(--text3)'>Bolum 1</div><div style='font-weight:600'>Okuma Anlama</div><div style='font-size:12px;color:var(--blue2)'>30 puan</div></div>"
+    +"<div style='background:var(--sur2);border-radius:10px;padding:12px;border:1px solid var(--bor)'><div style='font-size:11px;color:var(--text3)'>Bolum 2</div><div style='font-weight:600'>Bosluk Doldurma</div><div style='font-size:12px;color:var(--gold)'>25 puan</div></div>"
+    +"<div style='background:var(--sur2);border-radius:10px;padding:12px;border:1px solid var(--bor)'><div style='font-size:11px;color:var(--text3)'>Bolum 3</div><div style='font-weight:600'>Ceviri</div><div style='font-size:12px;color:var(--green)'>25 puan</div></div>"
+    +"<div style='background:var(--sur2);border-radius:10px;padding:12px;border:1px solid var(--bor)'><div style='font-size:11px;color:var(--text3)'>Bolum 4</div><div style='font-weight:600'>Yazma</div><div style='font-size:12px;color:#b854e0'>20 puan</div></div>"
+    +"</div>"
+    +"<button class='btn-p' style='font-size:16px;padding:14px 40px' onclick='renderSinavSoru()'>Sinava Basla →</button>"
+    +"</div>";
+}
+
+function renderSinavSoru() {
+  var s = window._sinav;
+  if (!s) return;
+  var idx = s.idx;
+  if (idx >= s.sorular.length) { showSinavSonuc(); return; }
+  var q = s.sorular[idx];
+  var total = s.sorular.length;
+
+  // Progress bar
+  var bolumColors = {okuma:"var(--blue2)", bosuk:"var(--gold)", ceviri_tr2de:"var(--green)", ceviri_de2tr:"var(--green)", yazma:"#b854e0"};
+  var bolumNames = {okuma:"Okuma Anlama", bosuk:"Bosluk Doldurma", ceviri_tr2de:"Ceviri (TR→DE)", ceviri_de2tr:"Ceviri (DE→TR)", yazma:"Yazma"};
+  var color = bolumColors[q.bolum]||"var(--gold)";
+  var bolumName = bolumNames[q.bolum]||q.bolum;
+
+  // Count questions in same bolum for display
+  var bolumSorular = s.sorular.filter(function(x){ return x.bolum===q.bolum; });
+  var bolumIdx = bolumSorular.indexOf(q)+1;
+
+  var html = "<div class='ex-topbar'>"
+    +"<div class='ex-title' style='display:flex;align-items:center;gap:10px'>"
+    +"<span style='font-size:13px;color:"+color+";font-family:var(--fm)'>"+bolumName+"</span>"
+    +"<span style='font-size:11px;color:var(--text3);font-family:var(--fm)'>"+bolumIdx+"/"+bolumSorular.length+" · "+q.puan+" puan</span>"
+    +"</div>"
+    +"<button class='ex-close' onclick='closeEx()'>Cik</button></div>"
+    +"<div class='ex-prog'><div class='ex-pbar'><div class='ex-pfill' style='width:"+(idx/total*100)+"%;background:"+color+"'></div></div>"
+    +"<span class='ex-ptxt'>"+(idx+1)+"/"+total+"</span></div>";
+
+  // OKUMA — metni sadece ilk soruda goster
+  if (q.bolum==="okuma") {
+    if (q.metin) {
+      html += "<div style='background:var(--sur2);border-radius:10px;padding:16px;margin-bottom:16px;border-left:3px solid var(--blue2);font-size:13px;line-height:1.8;color:var(--text2)'>"+q.metin+"</div>";
+      window._lastMetin = q.metin;
+    } else if (window._lastMetin) {
+      html += "<div style='background:var(--sur2);border-radius:10px;padding:16px;margin-bottom:16px;border-left:3px solid var(--blue2);font-size:13px;line-height:1.8;color:var(--text2)'>"+window._lastMetin+"</div>";
+    }
+    html += "<div class='q-area'><div class='q-label' style='color:var(--blue2)'>Soruyu cevaplayin ("+q.puan+" puan)</div>"
+      +"<div class='q-text'>"+q.soru+"</div></div>"
+      +"<div class='opts-grid' id='opts'></div>"
+      +"<div class='fb-box' id='fb'></div>"
+      +"<div class='act-row' id='arow' style='display:none'><button class='btn-p' onclick='sinavNextQ()'>Sonraki →</button></div>";
+    document.getElementById("ex-content").innerHTML = html;
+    q.opts.forEach(function(opt,i){
+      document.getElementById("opts").innerHTML += "<button class='opt-btn' onclick='checkSinavMCQ("+i+","+q.ans+","+q.puan+")'>"+opt+"</button>";
+    });
+    return;
+  }
+
+  // BOŞLUK DOLDURMA
+  if (q.bolum==="bosuk") {
+    html += "<div class='q-area'><div class='q-label' style='color:var(--gold)'>Bosluklari doldurun ("+q.puan+" puan)</div>"
+      +"<div class='q-text' style='font-size:17px;line-height:1.8'>"+q.soru+"</div>"
+      +"<div class='q-hint'>Her bosluk icin dogru fiil cekimini yazin</div></div>"
+      +"<div style='display:flex;flex-direction:column;gap:10px;margin-bottom:16px'>"
+      +"<div style='display:flex;gap:10px;align-items:center'>"
+      +"<span style='color:var(--text3);font-size:13px;min-width:70px'>1. Bosluk:</span>"
+      +"<input id='b1' class='fill-input' type='text' placeholder='...' autocomplete='off' spellcheck='false' style='flex:1'></div>"
+      +"<div style='display:flex;gap:10px;align-items:center'>"
+      +"<span style='color:var(--text3);font-size:13px;min-width:70px'>2. Bosluk:</span>"
+      +"<input id='b2' class='fill-input' type='text' placeholder='...' autocomplete='off' spellcheck='false' style='flex:1'></div>"
+      +"</div>"
+      +"<div class='fb-box' id='fb'></div>"
+      +"<div class='act-row'><button class='btn-p' onclick='checkSinavBosuk("+q.puan+")'>Kontrol Et</button></div>";
+    document.getElementById("ex-content").innerHTML = html;
+    document.getElementById("b1").focus();
+    return;
+  }
+
+  // ÇEVİRİ
+  if (q.bolum==="ceviri_tr2de"||q.bolum==="ceviri_de2tr") {
+    var label = q.bolum==="ceviri_tr2de" ? "Turkce → Almanca cevirin" : "Almanca → Turkce cevirin";
+    html += "<div class='q-area'><div class='q-label' style='color:var(--green)'>"+label+" ("+q.puan+" puan)</div>"
+      +"<div class='q-text' style='font-size:17px;line-height:1.7'>"+q.soru+"</div></div>"
+      +"<textarea class='txt-area' id='ceviri-inp' rows='3' placeholder='Cevirinizi yazin...'></textarea>"
+      +"<div class='fb-box' id='fb'></div>"
+      +"<div class='act-row'><button class='btn-p' onclick='checkSinavCeviri("+q.puan+")'>Kontrol Et</button></div>";
+    document.getElementById("ex-content").innerHTML = html;
+    document.getElementById("ceviri-inp").focus();
+    return;
+  }
+
+  // YAZMA
+  if (q.bolum==="yazma") {
+    html += "<div class='q-area'><div class='q-label' style='color:#b854e0'>Yazma Gorevi ("+q.puan+" puan)</div>"
+      +"<div class='q-text' style='font-size:15px;line-height:1.8'>"+q.soru+"</div>"
+      +"<div class='q-hint'>Ipucu: "+q.exp+"</div></div>"
+      +"<textarea class='txt-area' id='yazma-inp' rows='6' placeholder='Almanca yazin...'></textarea>"
+      +"<div class='fb-box' id='fb'></div>"
+      +"<div class='act-row'><button class='btn-p' onclick='checkSinavYazma("+q.puan+")'>Degerlendirme Al</button></div>";
+    document.getElementById("ex-content").innerHTML = html;
+    document.getElementById("yazma-inp").focus();
+    return;
+  }
+}
+
+function checkSinavMCQ(chosen, correct, puan) {
+  var s = window._sinav;
+  var ok = chosen === correct;
+  var kazanilan = ok ? puan : 0;
+  s.puanlar.push({bolum:s.sorular[s.idx].bolum, kazanilan:kazanilan, max:puan});
+  s.toplamPuan += kazanilan;
+  document.querySelectorAll(".opt-btn").forEach(function(b,i){
+    b.disabled=true;
+    if(i===correct) b.classList.add("correct");
+    else if(i===chosen&&!ok) b.classList.add("wrong");
+  });
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show "+(ok?"ok-fb":"err-fb");
+  fb.innerHTML = "<div class='fb-head'>"+(ok?"Dogru! +"+puan+" puan":"Yanlis! 0 puan")+"</div>"
+    +"<div class='fb-body'>"+s.sorular[s.idx].exp+"</div>";
+  document.getElementById("arow").style.display = "flex";
+}
+
+function checkSinavBosuk(puan) {
+  var s = window._sinav;
+  var q = s.sorular[s.idx];
+  var b1 = (document.getElementById("b1").value||"").trim();
+  var b2 = (document.getElementById("b2").value||"").trim();
+  var ok1 = normalizeDE(b1) === normalizeDE(q.cevap1);
+  var ok2 = normalizeDE(b2) === normalizeDE(q.cevap2||"");
+  var kazanilan = 0;
+  if (ok1 && ok2) kazanilan = puan;
+  else if (ok1 || ok2) kazanilan = Math.round(puan/2);
+  s.puanlar.push({bolum:q.bolum, kazanilan:kazanilan, max:puan});
+  s.toplamPuan += kazanilan;
+  document.getElementById("b1").disabled = true;
+  document.getElementById("b2").disabled = true;
+  document.getElementById("b1").style.borderColor = ok1?"var(--green)":"var(--red)";
+  document.getElementById("b2").style.borderColor = ok2?"var(--green)":"var(--red)";
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show "+(kazanilan===puan?"ok-fb":kazanilan>0?"ai-fb":"err-fb");
+  fb.innerHTML = "<div class='fb-head'>"+kazanilan+"/"+puan+" puan</div>"
+    +"<div class='fb-body'>Dogru cevaplar: <b>"+q.cevap1+"</b> / <b>"+(q.cevap2||"")+"</b><br>"+q.exp+"</div>";
+  document.querySelector(".act-row").innerHTML = "<button class='btn-p' onclick='sinavNextQ()'>Sonraki →</button>";
+}
+
+function checkSinavCeviri(puan) {
+  var s = window._sinav;
+  var q = s.sorular[s.idx];
+  var inp = document.getElementById("ceviri-inp");
+  var val = (inp.value||"").trim();
+  var userN = normalizeDE(val);
+  var keyWords = q.cevap.toLowerCase().split(" ").filter(function(w){return w.length>3;});
+  var found = keyWords.filter(function(w){return userN.indexOf(normalizeDE(w))>=0;});
+  var matchPct = Math.round((found.length/Math.max(keyWords.length,1))*100);
+  var kazanilan = matchPct>=80 ? puan : matchPct>=55 ? Math.round(puan*0.6) : matchPct>=30 ? Math.round(puan*0.3) : 0;
+  s.puanlar.push({bolum:q.bolum, kazanilan:kazanilan, max:puan});
+  s.toplamPuan += kazanilan;
+  inp.disabled = true;
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show "+(kazanilan===puan?"ok-fb":kazanilan>0?"ai-fb":"err-fb");
+  fb.innerHTML = "<div class='fb-head'>"+kazanilan+"/"+puan+" puan (Eslesme: %"+matchPct+")</div>"
+    +"<div class='fb-body'>Beklenen cevap:<br><b>"+q.cevap+"</b><br><br>Aciklama: "+q.exp+"</div>";
+  document.querySelector(".act-row").innerHTML = "<button class='btn-p' onclick='sinavNextQ()'>Sonraki →</button>";
+}
+
+function checkSinavYazma(puan) {
+  var s = window._sinav;
+  var q = s.sorular[s.idx];
+  var inp = document.getElementById("yazma-inp");
+  var val = (inp.value||"").trim();
+  inp.disabled = true;
+
+  // Rule-based yazma puanlama
+  var words = val.split(/\s+/).filter(function(w){return w.length>0;});
+  var sentences = val.split(/[.!?]+/).filter(function(s){return s.trim().length>0;});
+  var kazanilan = 0;
+  var feedback = [];
+  var lower = val.toLowerCase();
+
+  // Uzunluk kontrolu (maks 4 puan)
+  if (words.length>=50) { kazanilan+=4; feedback.push("✓ Yeterli uzunluk ("+words.length+" kelime)"); }
+  else if (words.length>=30) { kazanilan+=2; feedback.push("△ Biraz kisa ("+words.length+" kelime, min 50 onerilir)"); }
+  else { feedback.push("✗ Cok kisa ("+words.length+" kelime)"); }
+
+  // Cumle cesitliligi (maks 2 puan)
+  if (sentences.length>=4) { kazanilan+=2; feedback.push("✓ "+sentences.length+" cumle — iyi cesitlilik"); }
+  else if (sentences.length>=2) { kazanilan+=1; feedback.push("△ "+sentences.length+" cumle — daha fazla yaz"); }
+
+  // Doğru yapilar (maks 4 puan)
+  var goodStructures = 0;
+  if (/\bich bin\b/i.test(val)) { goodStructures++; }
+  if (/\bich habe\b/i.test(val)) { goodStructures++; }
+  if (/\bich komme\b/i.test(val)||/\bich wohne\b/i.test(val)) { goodStructures++; }
+  if (/\bweil\b/i.test(val)||/\bdeshalb\b/i.test(val)||/\baber\b/i.test(val)) { goodStructures++; feedback.push("✓ Baglac kullanimi (weil/deshalb/aber)"); }
+  if (/\bhabe.*(gemacht|gegangen|gesehen|gewesen|gekauft)\b/i.test(val)||/\bbin.*(gegangen|gefahren|gekommen)\b/i.test(val)) { goodStructures++; feedback.push("✓ Perfekt kullanimi"); }
+  kazanilan += Math.min(goodStructures, 4);
+
+  // Gramer hatalari (maks -2 ceza)
+  var hatalar = [];
+  if (/\bich ist\b/i.test(val)) hatalar.push("ich ist → ich bin");
+  if (/\bich hat\b/i.test(val)) hatalar.push("ich hat → ich habe");
+  if (/\ber bin\b/i.test(val)) hatalar.push("er bin → er ist");
+  if (hatalar.length > 0) {
+    kazanilan = Math.max(0, kazanilan-2);
+    feedback.push("✗ Gramer hatasi: "+hatalar.join(", "));
+  }
+
+  kazanilan = Math.min(kazanilan, puan);
+  s.puanlar.push({bolum:q.bolum, kazanilan:kazanilan, max:puan});
+  s.toplamPuan += kazanilan;
+
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show "+(kazanilan>=8?"ok-fb":kazanilan>=5?"ai-fb":"err-fb");
+  fb.innerHTML = "<div class='fb-head'>"+kazanilan+"/"+puan+" puan</div>"
+    +"<div class='fb-body' style='white-space:pre-line'>"+feedback.join("\n")
+    +(hatalar.length===0?"\n✓ Hata tespit edilmedi":"")
+    +"</div>";
+  document.querySelector(".act-row").innerHTML = "<button class='btn-p' onclick='sinavNextQ()'>Sonraki →</button>";
+}
+
+function sinavNextQ() {
+  var s = window._sinav;
+  s.idx++;
+  if (s.idx >= s.sorular.length) {
+    showSinavSonuc();
+  } else {
+    renderSinavSoru();
+  }
+}
+
+function showSinavSonuc() {
+  var s = window._sinav;
+  var sure = Math.round((Date.now() - s.baslamaSaati) / 60000);
+  var puan = Math.round(s.toplamPuan);
+  var gecti = puan >= 80;
+  var emoji = puan>=90?"🏆":puan>=80?"🎉":puan>=65?"💪":"📚";
+
+  // Bolum analizi
+  var bolumler = {okuma:{k:0,m:0}, bosuk:{k:0,m:0}, ceviri_tr2de:{k:0,m:0}, ceviri_de2tr:{k:0,m:0}, yazma:{k:0,m:0}};
+  s.puanlar.forEach(function(p){
+    if (bolumler[p.bolum]) { bolumler[p.bolum].k+=p.kazanilan; bolumler[p.bolum].m+=p.max; }
+  });
+  var bolumHTML = [
+    {key:"okuma", label:"Okuma Anlama", color:"var(--blue2)", max:30},
+    {key:"bosuk", label:"Bosluk Doldurma", color:"var(--gold)", max:25},
+    {key:"ceviri_tr2de", label:"Ceviri TR→DE", color:"var(--green)", max:15},
+    {key:"ceviri_de2tr", label:"Ceviri DE→TR", color:"var(--green)", max:10},
+    {key:"yazma", label:"Yazma", color:"#b854e0", max:20}
+  ].map(function(b){
+    var k = bolumler[b.key]?bolumler[b.key].k:0;
+    var m = bolumler[b.key]?bolumler[b.key].m:b.max;
+    var bpct = m>0?Math.round((k/m)*100):0;
+    return "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px'>"
+      +"<span style='font-size:13px;min-width:140px'>"+b.label+"</span>"
+      +"<div style='flex:1;height:8px;background:var(--sur3);border-radius:4px;overflow:hidden;margin:0 12px'>"
+      +"<div style='width:"+bpct+"%;height:100%;background:"+b.color+";border-radius:4px'></div></div>"
+      +"<span style='font-family:var(--fm);font-size:13px;color:"+b.color+"'>"+k+"/"+m+"</span></div>";
+  }).join("");
+
+  // Save to history
+  S.history = S.history||[];
+  S.history.unshift({type:"quiz",score:puan,date:new Date().toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}),level:"A1",label:"A1 Seviye Sinavi"});
+  S.totalEx++; S.todayEx++;
+  if (gecti) S.levelProgress["A1"] = 100;
+  updateUI(); accessToken ? saveDrive() : save();
+
+  document.getElementById("ex-content").innerHTML =
+    "<div style='text-align:center;padding:20px 10px'>"
+    +"<div style='font-size:52px;margin-bottom:12px'>"+emoji+"</div>"
+    +"<div style='font-family:var(--fd);font-size:56px;color:"+(gecti?"var(--green)":"var(--red)")+";line-height:1;margin-bottom:4px'>"+puan+"</div>"
+    +"<div style='font-size:14px;color:var(--text2);margin-bottom:6px'>100 uzerinden</div>"
+    +"<div style='display:inline-block;padding:6px 18px;border-radius:20px;font-size:14px;font-weight:600;margin-bottom:6px;background:"+(gecti?"rgba(61,186,126,.15)":"rgba(224,92,92,.15)")+";color:"+(gecti?"var(--green)":"var(--red)")+";border:1px solid "+(gecti?"var(--green)":"var(--red)")+"'>"+(gecti?"GECTI — A2 Hazirsiniz!":"KALDI — Gecme puani: 80")+"</div>"
+    +"<div style='font-size:13px;color:var(--text3);margin-bottom:24px'>Sure: "+sure+" dakika</div>"
+    +"<div style='background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:20px;text-align:left;margin-bottom:20px'>"
+    +"<div style='font-size:14px;font-weight:600;margin-bottom:14px'>Bolum Analizi</div>"
+    +bolumHTML+"</div>"
+    +(gecti
+      ?"<div style='background:rgba(61,186,126,.1);border:1px solid var(--green);border-radius:10px;padding:14px;font-size:13px;color:var(--text2);margin-bottom:20px'>🎉 <b>Tebrikler!</b> A1 seviyesini tamamladiniz. A2 konularina gecebilirsiniz!</div>"
+      :"<div style='background:rgba(224,92,92,.1);border:1px solid var(--red);border-radius:10px;padding:14px;font-size:13px;color:var(--text2);margin-bottom:20px'>💪 Daha fazla calismaniz gerekiyor. Eksik bolumlerinize odaklanin ve tekrar deneyin.</div>")
+    +"<div style='display:flex;gap:12px;justify-content:center'>"
+    +"<button class='btn-s' onclick='startQuiz()'>Tekrar Al</button>"
+    +"<button class='btn-p' onclick='closeEx()'>Ana Menuye Don</button>"
+    +"</div></div>";
+}
+
 window.addEventListener("load", function() {
   var saved = localStorage.getItem(SKEY);
   var savedUser = null;
