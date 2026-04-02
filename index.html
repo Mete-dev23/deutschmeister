@@ -2,8 +2,11 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DeutschMeister</title>
+<title>DeutschMeister v3.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f14;--sur:#151820;--sur2:#1c2030;--sur3:#232840;--bor:#2a3050;--gold:#e8b84b;--blue:#4a7cdc;--blue2:#6b9bff;--green:#3dba7e;--red:#e05c5c;--text:#e8ecf5;--text2:#8e99b8;--text3:#5a6480;--fd:'Playfair Display',serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace}
@@ -194,7 +197,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 </div>
 <div class="app">
 <aside class="sidebar">
-  <div class="logo"><h1>DeutschMeister</h1><p>Almanca Ogrenme</p></div>
+  <div class="logo"><h1>DeutschMeister</h1><p>Almanca Ogrenme</p><p style="font-size:9px;color:var(--text3);font-family:var(--fm);margin-top:2px">v3.2 — Ocak 2026</p></div>
   <div class="user-chip"><div class="user-avatar" id="uavatar">?</div><div><div class="user-name" id="uname">Yukleniyor...</div><div class="user-email" id="uemail">--</div></div></div>
   <div class="level-section">
     <h3>Seviye</h3>
@@ -1774,48 +1777,54 @@ function checkSentClick() {
 }
 function renderWriteQ() {
   var WQ = [
-    // === TÜR 1: ALMANCAYA ÇEVİR (uzun cümleler) ===
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Her sabah saat yedide kalkıyorum ve kahvaltı yapıyorum.", cevap:"Ich stehe jeden Morgen um sieben Uhr auf und frühstücke.", h:"aufstehen (trennbar) + um + Uhrzeit + und + frühstücken"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Annem bir hastanede hemşire olarak çalışıyor.", cevap:"Meine Mutter arbeitet als Krankenschwester in einem Krankenhaus.", h:"arbeiten als + Beruf + in einem/einer + Ort"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Geçen hafta sinemaya gittim ve çok güzel bir film izledim.", cevap:"Letzte Woche bin ich ins Kino gegangen und habe einen sehr schönen Film gesehen.", h:"Perfekt: bin gegangen / habe gesehen — letzte Woche = geçen hafta"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Almanca öğreniyorum çünkü Almanya'da çalışmak istiyorum.", cevap:"Ich lerne Deutsch, weil ich in Deutschland arbeiten möchte.", h:"weil + fiil sona: weil ich ... arbeiten möchte"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Bugün hava çok soğuk, bu yüzden evde kalmak istiyorum.", cevap:"Heute ist es sehr kalt, deshalb möchte ich zu Hause bleiben.", h:"deshalb = bu yüzden — möchte + Infinitiv sona"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Süpermarkette ekmek, süt ve meyve aldım.", cevap:"Ich habe im Supermarkt Brot, Milch und Obst gekauft.", h:"Perfekt: habe gekauft — im Supermarkt (Dativ)"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Kardeşim şu an üniversitede mühendislik okuyor.", cevap:"Mein Bruder studiert jetzt Ingenieurwesen an der Universität.", h:"studieren = üniversitede okumak — an der Universität (Dativ)"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Doktora gitmem lazım çünkü üç gündür ateşim var.", cevap:"Ich muss zum Arzt gehen, weil ich seit drei Tagen Fieber habe.", h:"müssen + Infinitiv — seit + Dativ = -den beri — Fieber haben"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Bu akşam arkadaşlarımla bir restoranda yemek yiyeceğiz.", cevap:"Heute Abend werden wir mit meinen Freunden in einem Restaurant essen.", h:"Futur: werden + Infinitiv — mit + Dativ — in einem Restaurant"},
-    {tip:"tr2de", p:"Türkçe cümleyi Almancaya çevir:", soru:"Dün çok yorgundum, bu yüzden erken uyudum.", cevap:"Gestern war ich sehr müde, deshalb bin ich früh schlafen gegangen.", h:"Prateritum: war (sein) — Perfekt: bin gegangen — deshalb"},
-    // === TÜR 2: TÜRKÇEYE ÇEVİR ===
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Jeden Morgen trinke ich zwei Tassen Kaffee und lese die Zeitung.", cevap:"Her sabah iki fincan kahve içiyorum ve gazete okuyorum.", h:"jeden Morgen=her sabah, Tasse=fincan, Zeitung=gazete"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Meine Schwester hat letzte Woche geheiratet und wohnt jetzt in München.", cevap:"Kız kardeşim geçen hafta evlendi ve şimdi Münih'te oturuyor.", h:"heiraten=evlenmek, letzte Woche=geçen hafta, wohnen=oturmak"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Ich lerne seit zwei Jahren Deutsch und kann schon gut sprechen.", cevap:"İki yıldır Almanca öğreniyorum ve artık iyi konuşabiliyorum.", h:"seit=...den beri, schon=artık/zaten, können=yapabilmek"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Der Zug fährt um 14 Uhr 30 ab und kommt um 17 Uhr in Berlin an.", cevap:"Tren saat 14.30'da kalkıyor ve saat 17'de Berlin'e varıyor.", h:"abfahren=kalkmak, ankommen=varmak, um=saat (zaman)"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Können Sie mir bitte sagen, wo die nächste Apotheke ist?", cevap:"Bana en yakın eczanenin nerede olduğunu söyleyebilir misiniz?", h:"können=yapabilmek, nächste=en yakın, Apotheke=eczane"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Ich habe Kopfschmerzen und möchte gern ein Aspirin kaufen.", cevap:"Baş ağrım var ve bir Aspirin satın almak istiyorum.", h:"Kopfschmerzen=baş ağrısı, möchten=istemek, kaufen=satın almak"},
-    {tip:"de2tr", p:"Almanca cümleyi Türkçeye çevir:", soru:"Das Restaurant ist leider geschlossen. Es öffnet erst morgen wieder.", cevap:"Restoran maalesef kapalı. Yarın ancak yeniden açılıyor.", h:"leider=maalesef, geschlossen=kapalı, erst=ancak/yalnızca"},
-    // === TÜR 3: SERBEST YAZMA (zengin konular) ===
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Dünkü gününü anlat. Ne yaptın, nereye gittin, kiminle görüştün?", cevap:"", h:"Perfekt kullan: Ich habe ... gemacht / Ich bin ... gegangen — gestern=dün"},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Yaşadığın şehri tanıt. Şehirde ne var, nasıl bir yer, seviyor musun?", cevap:"", h:"Es gibt... (var) — Die Stadt ist... — Ich wohne in... seit... Jahren"},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Bir arkadaşına e-posta yaz ve onu hafta sonu buluşmaya davet et.", cevap:"", h:"Hallo ...! / Möchtest du...? / Wir können... / Ich freue mich auf dich!"},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Bir süpermarkette alışveriş yapıyorsun. Kasiyerle diyalog yaz.", cevap:"", h:"Guten Tag! / Ich hätte gern... / Was kostet...? / Mit Karte bitte."},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Doktora gittin. Şikayetini anlat ve doktorun tavsiyelerini yaz.", cevap:"", h:"Ich habe Schmerzen in... / Seit wann? / Nehmen Sie... / Ich empfehle..."},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Gelecek yaz için tatil planını anlat. Nereye gideceksin, ne yapacaksın?", cevap:"", h:"Futur: Ich werde... — Im Sommer fahre ich nach... — Ich möchte..."},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Yeni bir işe başladın. İlk günün nasıldı? Meslektaşların nasıl?", cevap:"", h:"Mein erster Tag war... — Die Kollegen sind... — Ich muss..."},
-    {tip:"yaz", p:"Almanca yaz (3-5 cümle):", soru:"Ev arkadaşı arıyorsun. Kendini ve aradığın evi tanıtan ilan yaz.", cevap:"", h:"Ich suche... / Ich bin... Jahre alt / Die Wohnung soll... haben / Miete bis..."},
-    {tip:"yaz", p:"Almanca yaz (2-3 cümle):", soru:"Bu Almanca cümleyi düzelt ve neden hatalı olduğunu açıkla: 'Ich bin 25 Jahre und komme aus die Türkei.'", cevap:"", h:"Jahre alt (eksik) — aus + Dativ: aus der Türkei (die→der)"},
-    // === TÜR 4: BOŞLUK DOLDUR (uzun cümleler) ===
-    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"Ich ___ seit drei Jahren in Berlin und ___ als Ingenieur. Meine Frau ___ aus der Türkei und ___ Deutsch.", cevap:"wohne / arbeite / kommt / lernt", h:"wohnen(ich wohne) / arbeiten(ich arbeite) / kommen(sie kommt) / lernen(sie lernt)"},
-    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"___ Montag ___ ich zur Arbeit. Der Bus ___ um 8 Uhr ___.", cevap:"Am / fahre / fährt / ab", h:"Am Montag (zaman) / fahren(ich fahre) / abfahren trennbar: fährt...ab"},
-    {tip:"bosuk", p:"Boşlukları doğru kelimelerle doldur:", soru:"Ich ___ gestern sehr müde, ___ ich nicht schlafen ___.", cevap:"war / aber / konnte", h:"war=sein Prateritum / aber=ama / konnte=können Prateritum (yapamadım)"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Her sabah saat yedide kalkiyorum ve kahvalti yapiyorum.", cevap:"Ich stehe jeden Morgen um sieben Uhr auf und fruhstucke.", h:"aufstehen (trennbar) + um + Uhrzeit + fruhstucken"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Annem bir hastanede hemsire olarak calisiyor.", cevap:"Meine Mutter arbeitet als Krankenschwester in einem Krankenhaus.", h:"arbeiten als + Beruf + in einem + Ort"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Almanca ogreniyorum cunku Almanyada calismak istiyorum.", cevap:"Ich lerne Deutsch, weil ich in Deutschland arbeiten mochte.", h:"weil + fiil sona: weil ich ... arbeiten mochte"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Bugün hava cok soguk, bu yuzden evde kalmak istiyorum.", cevap:"Heute ist es sehr kalt, deshalb mochte ich zu Hause bleiben.", h:"deshalb = bu yuzden — mochte + Infinitiv sona"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Supermarkette ekmek, sut ve meyve aldim.", cevap:"Ich habe im Supermarkt Brot, Milch und Obst gekauft.", h:"Perfekt: habe gekauft — im Supermarkt (Dativ)"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Doktora gitmem lazim cunku uc gundur atesim var.", cevap:"Ich muss zum Arzt gehen, weil ich seit drei Tagen Fieber habe.", h:"mussen + Infinitiv — seit + Dativ — Fieber haben"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Kardesim su an universitede muhendislik okuyor.", cevap:"Mein Bruder studiert jetzt Ingenieurwesen an der Universitat.", h:"studieren = universitede okumak — an der Universitat"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Dun cok yorgundum, bu yuzden erken uyudum.", cevap:"Gestern war ich sehr mude, deshalb bin ich fruh schlafen gegangen.", h:"Prateritum: war — Perfekt: bin gegangen — deshalb"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Bu aksam arkadaslarimla bir restoranda yemek yiyecegiz.", cevap:"Heute Abend werden wir mit meinen Freunden in einem Restaurant essen.", h:"Futur: werden + Infinitiv — mit + Dativ"},
+    {tip:"tr2de", soru:"Turkce cumleyi Almancaya cevir: Iki yildir Berlin'de yasiyorum ve cok seviyorum.", cevap:"Ich wohne seit zwei Jahren in Berlin und liebe die Stadt sehr.", h:"seit zwei Jahren = iki yildir — Prasens kullanilir!"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Jeden Morgen trinke ich zwei Tassen Kaffee und lese die Zeitung.", cevap:"Her sabah iki fincan kahve iciyorum ve gazete okuyorum.", h:"jeden Morgen=her sabah, Tasse=fincan, Zeitung=gazete"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Meine Schwester hat letzte Woche geheiratet und wohnt jetzt in Munchen.", cevap:"Kiz kardesim gecen hafta evlendi ve simdi Munich'te oturuyor.", h:"heiraten=evlenmek, letzte Woche=gecen hafta"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Ich lerne seit zwei Jahren Deutsch und kann schon gut sprechen.", cevap:"Iki yildir Almanca ogreniyorum ve artik iyi konusabiliyorum.", h:"seit=...den beri, schon=artik, konnen=yapabilmek"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Der Zug fahrt um 14 Uhr 30 ab und kommt um 17 Uhr in Berlin an.", cevap:"Tren saat 14.30'da kalkiyor ve saat 17'de Berlin'e variyor.", h:"abfahren=kalkmak, ankommen=varmak, um=saat"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Konnen Sie mir bitte sagen, wann der nachste Zug nach Munchen fahrt?", cevap:"Bana bir sonraki Munih treninin ne zaman kalktigini soyleyebilir misiniz?", h:"konnen Sie=yapabilir misiniz, wann=ne zaman, nachste=bir sonraki"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Das Restaurant ist leider geschlossen. Es offnet erst morgen wieder.", cevap:"Restoran maalesef kapali. Yarin ancak yeniden aciliyor.", h:"leider=maalesef, geschlossen=kapali, erst=ancak"},
+    {tip:"de2tr", soru:"Almanca cumleyi Turkcye cevir: Ich habe meine Hausaufgaben nicht gemacht, weil ich krank war.", cevap:"Hasta oldugum icin ev odevlerimi yapmadim.", h:"nicht gemacht=yapmadim, weil=cunku/icin, krank war=hastaydim"},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Dunki gununu anlat. Ne yaptin, nereye gittin, kiminle gordusun?", cevap:"", h:"Perfekt kullan: Ich habe ... gemacht / Ich bin ... gegangen"},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Yasadigin sehri tanit. Sehirde ne var, nasil bir yer?", cevap:"", h:"Es gibt... (var) — Die Stadt ist... — Ich wohne in..."},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Bir Alman arkadasina e-posta yaz ve onu hafta sonu bulusmaya davet et.", cevap:"", h:"Hallo! / Mochtest du...? / Wir konnen uns... treffen / Bis bald!"},
+    {tip:"yaz", soru:"Almanca yaz (3-4 cumle): Bir supermarkette alisveris yapiyorsun. Kasiyerle diyalog yaz.", cevap:"", h:"Guten Tag! / Ich hatte gern... / Was kostet...? / Mit Karte bitte."},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Doktora gittin. Sikayetini anlat ve doktorun tavsiyelerini yaz.", cevap:"", h:"Ich habe Schmerzen in... / Seit wann? / Nehmen Sie..."},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Gelecek yaz icin tatil planini anlat. Nereye gideceksin?", cevap:"", h:"Futur: Ich werde... — Im Sommer fahre ich nach... — Ich mochte..."},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Yeni bir ise basladiniz. Ilk gunun nasil gecti, is arkadaslarin nasil?", cevap:"", h:"Mein erster Tag war... — Die Kollegen sind... — Ich muss..."},
+    {tip:"yaz", soru:"Almanca yaz (3-5 cumle): Ev arkadasi ariyorsun. Kendini ve aradigin evi taniyan ilan yaz.", cevap:"", h:"Ich suche... / Ich bin... Jahre alt / Die Miete soll... Euro sein"},
+    {tip:"bosuk", soru:"Bosluklari doldur: Ich ___ seit zwei Jahren in Hamburg und ___ dort als Ingenieur.", cevap1:"wohne", cevap2:"arbeite", h:"wohnen→wohne / arbeiten→arbeite (ich icin -e eki)"},
+    {tip:"bosuk", soru:"Bosluklari doldur: Am Montag ___ wir einen Ausflug. Der Bus ___ um 8 Uhr ab.", cevap1:"machen", cevap2:"fahrt", h:"machen→machen (wir) / abfahren trennbar→fahrt...ab (er)"},
+    {tip:"bosuk", soru:"Bosluklari doldur: Ich ___ kein Auto, deshalb ___ ich mit dem Bus.", cevap1:"habe", cevap2:"fahre", h:"haben→habe / fahren→fahre (ich)"},
+    {tip:"bosuk", soru:"Bosluklari doldur: Meine Schwester ___ Medizin. Sie ___ Arztin werden.", cevap1:"studiert", cevap2:"mochte", h:"studieren→studiert (sie) / mochten→mochte (sie)"}
   ];
 
-  // Anti-repeat: shuffle and track seen
+  // Anti-repeat sistemi
   if (!window._wqList || window._wqList.length === 0) {
     if (!window._seenWQ) window._seenWQ = [];
     var unseen = WQ.filter(function(_, i){ return window._seenWQ.indexOf(i) < 0; });
-    if (unseen.length < 3) { window._seenWQ = []; unseen = WQ.slice(); }
-    window._wqList = unseen.sort(function(){ return Math.random() - 0.5; }).slice(0, 8);
-    window._wqList.forEach(function(q){ var i=WQ.indexOf(q); if(i>=0) window._seenWQ.push(i); });
+    if (unseen.length < 4) { window._seenWQ = []; unseen = WQ.slice(); }
+    // Karisik tip secimi: 3 tr2de, 2 de2tr, 2 yaz, 1 bosuk
+    var byType = {tr2de:[], de2tr:[], yaz:[], bosuk:[]};
+    unseen.forEach(function(q){ if(byType[q.tip]) byType[q.tip].push(q); });
+    Object.keys(byType).forEach(function(k){ byType[k].sort(function(){return Math.random()-0.5;}); });
+    window._wqList = []
+      .concat(byType.tr2de.slice(0,3))
+      .concat(byType.de2tr.slice(0,2))
+      .concat(byType.yaz.slice(0,2))
+      .concat(byType.bosuk.slice(0,1))
+      .sort(function(){return Math.random()-0.5;});
+    if (window._wqList.length < 4) window._wqList = unseen.sort(function(){return Math.random()-0.5;}).slice(0,8);
+    window._wqList.forEach(function(q){ var i=WQ.indexOf(q); if(i>=0&&window._seenWQ.indexOf(i)<0) window._seenWQ.push(i); });
     window._wqIdx = 0;
   }
 
@@ -1828,22 +1837,59 @@ function renderWriteQ() {
   var q = window._wqList[idx];
   window._wp = q;
 
-  // Tip badge
-  var tipMap = {tr2de:"TR → DE Çeviri", de2tr:"DE → TR Çeviri", yaz:"Serbest Yazma", bosuk:"Boşluk Doldur"};
-  var tipColor = {tr2de:"var(--blue2)", de2tr:"var(--green)", yaz:"var(--gold)", bosuk:"#b854e0"};
-  var tipBadge = "<span style='font-size:11px;font-family:var(--fm);color:"+tipColor[q.tip]+";margin-left:8px'>"+tipMap[q.tip]+"</span>";
+  var tipLabels = {tr2de:"TR → DE Ceviri", de2tr:"DE → TR Ceviri", yaz:"Serbest Yazma", bosuk:"Bosluk Doldur"};
+  var tipColors = {tr2de:"var(--blue2)", de2tr:"var(--green)", yaz:"var(--gold)", bosuk:"#b854e0"};
+  var color = tipColors[q.tip] || "var(--gold)";
+  var label = tipLabels[q.tip] || "Yazma";
 
-  document.getElementById("ex-content").innerHTML =
-    "<div class='ex-topbar'><div class='ex-title'>Yazma Alistirmasi"+tipBadge+"</div><button class='ex-close' onclick='closeEx()'>Kapat</button></div>"
-    +"<div class='ex-prog'><div class='ex-pbar'><div class='ex-pfill' style='width:"+(window._wqList.length>0?(idx/window._wqList.length)*100:0)+"%'></div></div><span class='ex-ptxt'>"+(idx+1)+"/"+window._wqList.length+"</span></div>"
-    +"<div class='q-area'><div class='q-label' style='color:"+tipColor[q.tip]+"'>"+q.p+"</div>"
-    +"<div class='q-text' style='font-size:16px;line-height:1.7'>"+q.soru+"</div>"
-    +(q.h?"<div class='q-hint'>Ipucu: "+q.h+"</div>":"")+"</div>"
-    +(q.cevap?"<div style='background:var(--sur3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text3)'>Bu soru icin beklenen cevap var — yazin ve kontrol edin.</div>":"")
-    +"<textarea class='txt-area' id='wi' placeholder='Almanca yaz...' rows='5'></textarea>"
-    +"<div class='fb-box' id='fb'></div>"
-    +"<div class='ai-load' id='ail'><div class='dot-pulse'><span></span><span></span><span></span></div> Degerlendirilyor...</div>"
-    +"<div class='act-row'><button class='btn-p' id='wsbtn' onclick='checkWrite()'>Kontrol Et</button><button class='btn-s' onclick='skipWrite()'>Atla</button></div>";
+  var html = "";
+  html += "<div class='ex-topbar'>";
+  html += "<div class='ex-title'>Yazma &nbsp;<span style='font-size:12px;font-family:var(--fm);color:" + color + ";background:var(--sur3);padding:3px 10px;border-radius:20px'>" + label + "</span></div>";
+  html += "<button class='ex-close' onclick='closeEx()'>Kapat</button></div>";
+  html += "<div class='ex-prog'><div class='ex-pbar'><div class='ex-pfill' style='width:" + (window._wqList.length>0?(idx/window._wqList.length)*100:0) + "%;background:" + color + "'></div></div><span class='ex-ptxt'>" + (idx+1) + "/" + window._wqList.length + "</span></div>";
+  html += "<div class='q-area'>";
+  html += "<div class='q-label' style='color:" + color + "'>" + (q.tip==="tr2de"?"Turkce cumleyi Almancaya cevir":q.tip==="de2tr"?"Almanca cumleyi Turkcye cevir":q.tip==="bosuk"?"Bosluklari dogru sekilde doldur":"Almanca yaz") + "</div>";
+  html += "<div class='q-text' style='font-size:16px;line-height:1.7'>" + q.soru + "</div>";
+  if (q.h) html += "<div class='q-hint'>Ipucu: " + q.h + "</div>";
+  html += "</div>";
+
+  if (q.tip === "bosuk") {
+    html += "<div style='display:flex;flex-direction:column;gap:10px;margin-bottom:16px'>";
+    html += "<div style='display:flex;gap:10px;align-items:center'><span style='color:var(--text3);font-size:13px;min-width:80px'>1. Bosluk:</span><input id='b1' class='fill-input' type='text' placeholder='...' autocomplete='off' spellcheck='false' style='flex:1'></div>";
+    html += "<div style='display:flex;gap:10px;align-items:center'><span style='color:var(--text3);font-size:13px;min-width:80px'>2. Bosluk:</span><input id='b2' class='fill-input' type='text' placeholder='...' autocomplete='off' spellcheck='false' style='flex:1'></div>";
+    html += "</div>";
+    html += "<div class='fb-box' id='fb'></div>";
+    html += "<div class='act-row'><button class='btn-p' onclick='checkWriteBosuk()'>Kontrol Et</button><button class='btn-s' onclick='skipWrite()'>Atla</button></div>";
+  } else {
+    html += "<textarea class='txt-area' id='wi' rows='5' placeholder='Almanca yaz...'></textarea>";
+    html += "<div class='fb-box' id='fb'></div>";
+    html += "<div class='ai-load' id='ail'><div class='dot-pulse'><span></span><span></span><span></span></div> Degerlendiriliyor...</div>";
+    html += "<div class='act-row'><button class='btn-p' id='wsbtn' onclick='checkWrite()'>Kontrol Et</button><button class='btn-s' onclick='skipWrite()'>Atla</button></div>";
+  }
+
+  document.getElementById("ex-content").innerHTML = html;
+  if (q.tip === "bosuk" && document.getElementById("b1")) document.getElementById("b1").focus();
+  else if (document.getElementById("wi")) document.getElementById("wi").focus();
+}
+
+function checkWriteBosuk() {
+  var q = window._wp;
+  if (!q) return;
+  var b1 = (document.getElementById("b1")||{value:""}).value.trim();
+  var b2 = (document.getElementById("b2")||{value:""}).value.trim();
+  var ok1 = normalizeDE(b1) === normalizeDE(q.cevap1||"");
+  var ok2 = normalizeDE(b2) === normalizeDE(q.cevap2||"");
+  if (document.getElementById("b1")) { document.getElementById("b1").disabled=true; document.getElementById("b1").style.borderColor=ok1?"var(--green)":"var(--red)"; }
+  if (document.getElementById("b2")) { document.getElementById("b2").disabled=true; document.getElementById("b2").style.borderColor=ok2?"var(--green)":"var(--red)"; }
+  var kazanilan = (ok1&&ok2) ? 2 : (ok1||ok2) ? 1 : 0;
+  if (ok1&&ok2) { S.xp+=12; S.correct++; } else if (ok1||ok2) { S.xp+=5; }
+  S.total++; sesTotal++;
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show " + ((ok1&&ok2)?"ok-fb":kazanilan>0?"ai-fb":"err-fb");
+  fb.innerHTML = "<div class='fb-head'>" + ((ok1&&ok2)?"Mukemmel! Her iki bosluk dogru":"Kismi dogru: "+kazanilan+"/2") + "</div>"
+    + "<div class='fb-body'>Dogru: <b>" + q.cevap1 + "</b> / <b>" + q.cevap2 + "</b><br>" + q.h + "</div>";
+  document.querySelector(".act-row").innerHTML = "<button class='btn-p' onclick='skipWrite()'>Sonraki</button>";
+  updateUI(); accessToken ? saveDrive() : save();
 }
 
 function skipWrite() {
