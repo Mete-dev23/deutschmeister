@@ -1932,56 +1932,109 @@ function checkWrite() {
 function evaluateWithAnswer(text, q) {
   var report = "";
   var xp = 10;
+
+  // === ORTAK NORMALIZE + FUZZY MATCH ===
+  // normalizeDE zaten var (lowercase, ss/ß, ae/oe/ue)
   var userN = normalizeDE(text);
+  var correctN = normalizeDE(q.cevap || "");
 
-  // For boşluk doldur: check each answer part
-  if (q.tip === "bosuk") {
-    var answers = q.cevap.split("/").map(function(a){ return normalizeDE(a.trim()); });
-    var correct = 0;
-    answers.forEach(function(a) {
-      if (userN.indexOf(a) >= 0) correct++;
+  // Birebir eslesme (normalizeDE sonrasi)
+  if (userN === correctN) {
+    return {report:"PUAN: 10/10\n\nMukemmel! Tamamen dogru.", xp:20};
+  }
+
+  // === YAKIN ESLESME: Her kelimeyi ayri kontrol et ===
+  // Kullanicinin cevabini kelimelere bol
+  var userWords = userN.replace(/[.,!?;:]/g,"").split(/\s+/).filter(function(w){return w.length>0;});
+  var corrWords = correctN.replace(/[.,!?;:]/g,"").split(/\s+/).filter(function(w){return w.length>0;});
+
+  // Her dogru kelime icin: kullanicinin kelimelerinden en yakin eslesmeyi bul
+  var matched = 0;
+  var missedWords = [];
+  corrWords.forEach(function(cw) {
+    // 1. Birebir eslesme
+    if (userWords.indexOf(cw) >= 0) { matched++; return; }
+    // 2. Fuzzy: levenshtein mesafesi <= 2 (kucuk yazim hatalari)
+    var bestDist = 999;
+    userWords.forEach(function(uw) {
+      var d = levenshtein(cw, uw);
+      if (d < bestDist) bestDist = d;
     });
-    var pct = Math.round((correct/answers.length)*100);
-    report += "PUAN: "+pct+"%\n\n";
-    if (correct === answers.length) {
-      report += "Mukemmel! Tum bosluklar dogru.\n";
-      xp = 20;
-    } else {
-      report += "Dogru: "+correct+"/"+answers.length+" bosluk\n\n";
-      report += "Beklenen cevaplar:\n  "+q.cevap+"\n\n";
-      report += "Ipucu: "+q.h;
-      xp = correct * 5;
-    }
-    return {report: report, xp: xp};
-  }
-
-  // For tr2de: compare with expected
-  var correctN = normalizeDE(q.cevap);
-  var isExact = userN === correctN;
-
-  // Partial match: check key words
-  var keyWords = q.cevap.toLowerCase().split(" ")
-    .filter(function(w){ return w.length > 3; });
-  var found = keyWords.filter(function(w){
-    return normalizeDE(w) && userN.indexOf(normalizeDE(w)) >= 0;
+    var maxDist = cw.length <= 4 ? 1 : cw.length <= 7 ? 2 : 3;
+    if (bestDist <= maxDist) { matched++; return; }
+    missedWords.push(cw);
   });
-  var matchPct = Math.round((found.length / Math.max(keyWords.length,1)) * 100);
 
-  if (isExact || matchPct >= 85) {
-    report += "PUAN: 10/10\n\nMukemmel! Cevabiniz dogru.\n";
-    xp = 20;
-  } else if (matchPct >= 60) {
-    report += "PUAN: 7/10\n\nIyi! Bazi hatalar var.\n\n";
-    report += "Beklenen cevap:\n  "+q.cevap+"\n\n";
-    report += "Ipucu: "+q.h;
-    xp = 12;
-  } else {
-    report += "PUAN: 4/10\n\nDevam et! Cevabiniz beklentiden uzak.\n\n";
-    report += "Dogru cevap:\n  "+q.cevap+"\n\n";
-    report += "Aciklama: "+q.h;
-    xp = 5;
+  var matchPct = Math.round((matched / Math.max(corrWords.length, 1)) * 100);
+
+  // Yapısal kontroller (bonus/ceza yok, sadece geri bildirim)
+  var feedback = [];
+
+  // weil + fiil sona kontrolu
+  if (/\bweil\b/.test(userN)) {
+    var weilMatch = userN.match(/weil\s+(\S+)\s+(\S+)\s+(\S+)\s*([.!?]?)$/);
+    if (weilMatch) feedback.push("✓ weil yan cumlesi var");
+    else feedback.push("△ weil kullandin — fiil en sona gelmeli: 'weil ich ... arbeiten mochte'");
   }
+
+  // Gramer hatalari (bilgi amacli geri bildirim, puan dusmez)
+  if (/weil\s+[A-Z]/.test(text)) {
+    feedback.push("Not: 'weil' sonrasi ozne kucuk harfle baslar: 'weil ich' (Ich degil)");
+  }
+
+  // === PUAN VER ===
+  var puan, puanStr;
+  if (matchPct >= 90) {
+    puan = 10; puanStr = "10/10"; xp = 20;
+    report += "PUAN: " + puanStr + "\n\nCok iyi! Kucuk fark var ama anlamsal olarak dogru.\n";
+  } else if (matchPct >= 75) {
+    puan = 8; puanStr = "8/10"; xp = 16;
+    report += "PUAN: " + puanStr + "\n\nIyi! Genel yapi dogru, kucuk hatalar var.\n";
+  } else if (matchPct >= 55) {
+    puan = 6; puanStr = "6/10"; xp = 10;
+    report += "PUAN: " + puanStr + "\n\nOrta. Onemli kelimeler eksik veya yanlis.\n";
+  } else if (matchPct >= 35) {
+    puan = 4; puanStr = "4/10"; xp = 6;
+    report += "PUAN: " + puanStr + "\n\nDevam et! Yapiyi tekrar calis.\n";
+  } else {
+    puan = 2; puanStr = "2/10"; xp = 3;
+    report += "PUAN: " + puanStr + "\n\nCok eksik. Asagidaki ornek cumlevi incele.\n";
+  }
+
+  if (feedback.length > 0) {
+    report += "\n" + feedback.join("\n") + "\n";
+  }
+
+  if (missedWords.length > 0 && matchPct < 90) {
+    report += "\nEksik/yanlis kelimeler: " + missedWords.join(", ") + "\n";
+  }
+
+  report += "\nBeklenen cevap:\n" + q.cevap;
+  if (q.h) report += "\n\nIpucu: " + q.h;
+
   return {report: report, xp: xp};
+}
+
+// Levenshtein mesafesi (kucuk yazim hatalari icin)
+function levenshtein(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  var matrix = [];
+  for (var i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+  for (var j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+  for (var i = 1; i <= b.length; i++) {
+    for (var j = 1; j <= a.length; j++) {
+      if (b.charAt(i-1) === a.charAt(j-1)) {
+        matrix[i][j] = matrix[i-1][j-1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i-1][j-1] + 1,
+          Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1)
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
 }
 
 function evaluateGerman(text, prompt, level) {
