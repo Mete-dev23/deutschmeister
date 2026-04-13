@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DeutschMeister v3.3 — 03.04.2026 10:44</title>
+<title>DeutschMeister v3.4 — 13.04.2026 13:09</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f14;--sur:#151820;--sur2:#1c2030;--sur3:#232840;--bor:#2a3050;--gold:#e8b84b;--blue:#4a7cdc;--blue2:#6b9bff;--green:#3dba7e;--red:#e05c5c;--text:#e8ecf5;--text2:#8e99b8;--text3:#5a6480;--fd:'Playfair Display',serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace}
@@ -197,7 +197,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 </div>
 <div class="app">
 <aside class="sidebar">
-  <div class="logo"><h1>DeutschMeister</h1><p>Almanca Ogrenme</p><p style="font-size:9px;color:var(--text3);font-family:var(--fm);margin-top:2px">v3.3 — 03.04.2026 10:44</p></div>
+  <div class="logo"><h1>DeutschMeister</h1><p>Almanca Ogrenme</p><p style="font-size:9px;color:var(--text3);font-family:var(--fm);margin-top:2px">v3.4 — 13.04.2026 13:09</p></div>
   <div class="user-chip"><div class="user-avatar" id="uavatar">?</div><div><div class="user-name" id="uname">Yukleniyor...</div><div class="user-email" id="uemail">--</div></div></div>
   <div class="level-section">
     <h3>Seviye</h3>
@@ -246,8 +246,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
     <div class="page-header"><div><h2>Konular</h2><p id="topics-sub">A1 seviyesi konular</p></div></div>
     <div id="topics-list-view">
       <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="tab active" id="tab-a1" onclick="filterTopics('A1',this)">A1 Konuları</button>
-        <button class="tab" id="tab-a2" onclick="filterTopics('A2',this)">A2 Konuları</button>
+        <button class="tab active" id="tab-a1" onclick="filterTopics('A1',this)">A1</button>
+        <button class="tab" id="tab-a2" onclick="filterTopics('A2',this)">A2</button>
+        <button class="tab" id="tab-b1" onclick="filterTopics('B1',this)">B1</button>
+        <button class="tab" id="tab-b2" onclick="filterTopics('B2',this)">B2</button>
+        <button class="tab" id="tab-c1" onclick="filterTopics('C1',this)">C1</button>
       </div>
       <div class="topics-grid" id="topics-grid"></div>
     </div>
@@ -1460,6 +1463,637 @@ var TOPIC_CONTENT = {
   }
 };
 
+// B1, B2, C1 Topic Content Extension
+Object.assign(TOPIC_CONTENT, {
+
+// ══════════════════════════════════════════════════════════════════════════════
+// B1 KONULARI
+// ══════════════════════════════════════════════════════════════════════════════
+
+b1_konjunktiv2: {
+  lv:"B1", name:"Konjunktiv II", tr:"Dilek/Kibarlık Kipi",
+  anlatim:[
+    {baslik:"Konjunktiv II nedir?", icerik:`Gerçek olmayan durumlar, kibarlık ve tahmin için kullanılır.<br><br>
+<b>3 temel kullanım:</b><br>
+1. Kibarlık: Könnten Sie mir helfen? = Yardım edebilir misiniz?<br>
+2. Dilek: Wenn ich Zeit hätte... = Vaktim olsaydı...<br>
+3. Tavsiye: Du solltest mehr schlafen. = Daha fazla uyumalısın.`},
+    {baslik:"Konjunktiv II yapısı", icerik:`<b>würde + Infinitiv</b> (en yaygın)<br>
+Ich würde gern reisen. = Seyahat etmek isterdim.<br>
+Er würde das nie machen. = O bunu asla yapmazdı.<br><br>
+<b>Önemli fiiller direk form alır:</b><br>
+sein → wäre (ich wäre, du wärst, er wäre)<br>
+haben → hätte (ich hätte, du hättest, er hätte)<br>
+können → könnte (ich könnte)<br>
+müssen → müsste, dürfen → dürfte, sollen → sollte`},
+    {baslik:"Kibarlık ifadeleri", icerik:`Könnten Sie bitte... = ...yapabilir misiniz? (çok nazik)<br>
+Würden Sie bitte... = ...yapar mısınız?<br>
+Ich hätte gern... = ...istiyorum (nazik istek)<br>
+Dürfte ich...? = ...yapabilir miyim? (çok resmi)<br>
+Es wäre schön, wenn... = ...olsaydı çok güzel olurdu`},
+    {baslik:"Koşul cümlecikleri (Konditionalsätze)", icerik:`<b>Gerçekleşmemiş koşul:</b><br>
+Wenn ich reich wäre, würde ich reisen.<br>
+= Zengin olsaydım seyahat ederdim.<br><br>
+Wenn er früher aufgestanden wäre, hätte er den Zug erwischt.<br>
+= Daha erken kalksaydı treni yakalardı. (geçmiş!)<br><br>
+Kural: wenn + Konjunktiv II → Hauptsatz + würde/hätte/wäre`}
+  ],
+  sorular:[
+    {t:"mcq",d:1,q:"'Könnten Sie mir helfen?' neden Konjunktiv II?",o:["Geçmiş zaman","Kibarlık/nazik istek","Emir kipi","Gelecek zaman"],a:1,e:"Konjunktiv II kibarlık için: Könnten (Konnten'den değil!) çok nazik."},
+    {t:"fill",d:2,q:"Ich ___ gern nach Japan reisen. (würde)",c:"würde",e:"würde + Infinitiv = Konjunktiv II. Ich würde gern reisen = Seyahat etmek isterdim."},
+    {t:"mcq",d:2,q:"'Wenn ich Zeit hätte, ...' devamı nasıl gelir?",o:["... werde ich lernen.","... würde ich mehr lernen.","... habe ich gelernt.","... lerne ich."],a:1,e:"Koşul cümlesinde würde + Infinitiv: Wenn ich Zeit hätte, würde ich lernen."},
+    {t:"fill",d:2,q:"Er ___ das nie sagen. (würde - asla söylemezdi)",c:"würde",e:"würde + Infinitiv. Er würde das nie sagen."},
+    {t:"mcq",d:3,q:"'hätte' hangi fiilin Konjunktiv II'si?",o:["sein","werden","haben","kommen"],a:2,e:"haben → Konjunktiv II: hätte. sein → wäre, werden → würde"},
+    {t:"fill",d:3,q:"Wenn ich reich ___, würde ich reisen.",c:"wäre",e:"sein Konjunktiv II: wäre. Wenn ich reich WÄRE... = Zengin olsaydım..."}
+  ]
+},
+
+b1_passiv: {
+  lv:"B1", name:"Passiv", tr:"Edilgen Çatı",
+  anlatim:[
+    {baslik:"Passiv nedir ve neden kullanılır?", icerik:`Edilgen: Eylemin kim tarafından yapıldığı değil, eylemin kendisi önemli.<br><br>
+<b>Aktif:</b> Der Koch kocht das Essen. = Aşçı yemeği pişiriyor.<br>
+<b>Passiv:</b> Das Essen wird gekocht. = Yemek pişirilmektedir.<br><br>
+Kullanım: Talimatlar, haberler, bilimsel yazılar, resmi metinler`},
+    {baslik:"Präsens Passiv yapısı", icerik:`<b>werden + Partizip II</b><br><br>
+Das Buch wird gelesen. = Kitap okunmaktadır.<br>
+Die Briefe werden geschrieben. = Mektuplar yazılmaktadır.<br>
+Das Auto wird repariert. = Araba tamir edilmektedir.<br><br>
+werden çekimi: ich werde, du wirst, er wird, wir werden, ihr werdet, sie werden`},
+    {baslik:"Prateritum Passiv", icerik:`<b>wurde + Partizip II</b><br><br>
+Das Buch wurde geschrieben. = Kitap yazıldı.<br>
+Der Brief wurde verschickt. = Mektup gönderildi.<br>
+Die Stadt wurde gebaut. = Şehir inşa edildi.<br><br>
+wurde çekimi: ich wurde, du wurdest, er wurde, wir wurden`},
+    {baslik:"von + wem (kim tarafından?)", icerik:`Aktif cümledeki özne Passiv'de von + Dativ olur:<br><br>
+<b>Aktif:</b> Goethe schrieb den Roman.<br>
+<b>Passiv:</b> Der Roman wurde von Goethe geschrieben.<br>
+= Roman Goethe tarafından yazıldı.<br><br>
+durch + Akkusativ = bir araç/sebep ile:<br>
+Das Haus wurde durch ein Feuer zerstört. = Ev yangın tarafından tahrip edildi.`}
+  ],
+  sorular:[
+    {t:"mcq",d:1,q:"Passiv Präsens: 'Das Haus ___ gebaut.'",o:["hat","ist","wird","wurde"],a:2,e:"Passiv Präsens: werden + PP. Das Haus WIRD gebaut = Ev inşa ediliyor."},
+    {t:"fill",d:2,q:"Der Brief ___ gestern geschickt. (Passiv Prateritum)",c:"wurde",e:"Passiv Prateritum: wurde + PP. Der Brief WURDE geschickt."},
+    {t:"mcq",d:2,q:"'Das Buch wurde von Schiller geschrieben.' Aktif hali?",o:["Schiller schreibt das Buch.","Schiller schrieb das Buch.","Das Buch schrieb Schiller.","Von Schiller wurde geschrieben."],a:1,e:"Passiv → Aktif: von Schiller = özne. wurde geschrieben = schrieb (Prateritum)"},
+    {t:"fill",d:3,q:"In Deutschland ___ viel Bier getrunken. (Passiv Präsens, Almanya'da çok bira içiliyor)",c:"wird",e:"Passiv Präsens 3. tekil: wird. In Deutschland WIRD viel Bier getrunken."},
+    {t:"mcq",d:3,q:"'durch' ve 'von' Passiv'de farkı nedir?",o:["Fark yok","von=kişi, durch=araç/sebep","von=araç, durch=kişi","İkisi de kişi için"],a:1,e:"von + Dativ → kim tarafından (kişi). durch + Akkusativ → hangi araçla/sebeple"}
+  ]
+},
+
+b1_relativsatz: {
+  lv:"B1", name:"Relativsätze", tr:"İlgi Cümleleri",
+  anlatim:[
+    {baslik:"Relativsatz nedir?", icerik:`İsmi niteleyen yan cümle. Türkçe'deki 'ki' ile gelen yan cümleler gibi.<br><br>
+Der Mann, <b>der</b> dort steht, ist mein Vater.<br>
+= Orada duran adam benim babam.<br><br>
+Die Frau, <b>die</b> Deutsch lehrt, heißt Müller.<br>
+= Almanca öğreten kadının adı Müller.<br><br>
+Fiil Relativsatz'da SONA gider!`},
+    {baslik:"Relativpronomen tablosu", icerik:`İlgi zamiri, başvurduğu ismin cinsiyetini alır:<br><br>
+<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eril&nbsp;&nbsp;&nbsp;dişil&nbsp;&nbsp;nötr&nbsp;&nbsp;&nbsp;çoğul</b><br>
+Nom: der&nbsp;&nbsp;&nbsp;die&nbsp;&nbsp;&nbsp;&nbsp;das&nbsp;&nbsp;&nbsp;&nbsp;die<br>
+Akk: den&nbsp;&nbsp;&nbsp;die&nbsp;&nbsp;&nbsp;&nbsp;das&nbsp;&nbsp;&nbsp;&nbsp;die<br>
+Dat: dem&nbsp;&nbsp;&nbsp;der&nbsp;&nbsp;&nbsp;&nbsp;dem&nbsp;&nbsp;&nbsp;&nbsp;denen<br>
+Gen: dessen&nbsp;deren&nbsp;&nbsp;dessen&nbsp;deren<br><br>
+Not: Nominativ'de belirli artikelle aynı!`},
+    {baslik:"Hangi hal? Relativsatz içindeki rolüne göre!", icerik:`<b>Nominativ</b> (özne rolündeyse):<br>
+Das Kind, <b>das</b> spielt, ist mein Sohn. (das Kind = özne)<br><br>
+<b>Akkusativ</b> (nesne rolündeyse):<br>
+Das Buch, <b>das</b> ich lese, ist interessant. (ich = özne, das Buch = nesne)<br><br>
+<b>Dativ</b> (dolaylı nesne):<br>
+Der Mann, <b>dem</b> ich helfe, ist krank.`},
+    {baslik:"wo, was, wer ile Relativsätze", icerik:`<b>wo</b> = yer için:<br>
+Die Stadt, wo ich wohne, heißt Berlin.<br><br>
+<b>was</b> = belirsiz referans (alles, nichts, etwas):<br>
+Alles, was er sagt, ist wahr.<br><br>
+<b>wer/wen/wem</b> = kişi (belirsiz):<br>
+Wer nicht wagt, der nicht gewinnt.`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'Der Mann, ___ dort steht, ist mein Vater.' (der Mann, Nominativ)",o:["den","dem","der","dessen"],a:2,e:"der Mann eril, Relativsatz'da özne (Nominativ) → der"},
+    {t:"fill",d:2,q:"Die Frau, ___ ich kenne, ist Ärztin. (die Frau, Akkusativ)",c:"die",e:"die Frau dişil, Relativsatz'da nesne (Akkusativ) → die"},
+    {t:"mcq",d:2,q:"'Das Kind, ___ ich helfe, ist krank.' (Dativ)",o:["das","dem","den","dessen"],a:1,e:"das Kind nötr, helfen Dativ ister → Dativ nötr: dem"},
+    {t:"fill",d:3,q:"Der Mann, ___ Auto kaputt ist, wartet. (Genitiv)",c:"dessen",e:"Genitiv eril/nötr: dessen. Der Mann, DESSEN Auto kaputt ist..."},
+    {t:"mcq",d:3,q:"Relativsatz'da fiil nereye gider?",o:["Başa","2. konuma","Sona","Değişmez"],a:2,e:"Tüm yan cümlelerde olduğu gibi Relativsatz'da da fiil SONA gider."}
+  ]
+},
+
+b1_indirekterede: {
+  lv:"B1", name:"Indirekte Rede", tr:"Dolaylı Anlatım",
+  anlatim:[
+    {baslik:"Dolaylı anlatım nedir?", icerik:`Birinin söylediklerini aktarırken kullanılır.<br><br>
+<b>Direkt:</b> Er sagt: "Ich bin müde."<br>
+<b>İndirek:</b> Er sagt, dass er müde ist/sei.<br><br>
+Günlük dilde: Er sagt, dass er müde ist. (normal)<br>
+Resmi/yazılı: Er sagt, er sei müde. (Konjunktiv I)`},
+    {baslik:"Konjunktiv I (resmi indirekt rede)", icerik:`Haber dili ve resmi metinlerde kullanılır.<br><br>
+<b>sein:</b> ich sei, du sei(e)st, er sei, wir seien<br>
+<b>haben:</b> ich habe, du habest, er habe<br>
+<b>kommen:</b> er komme, sie komme<br><br>
+Der Minister sagte, er sei nicht schuldig.<br>
+= Bakan suçsuz olduğunu söyledi.<br><br>
+Kural: 3. tekil Konjunktiv I = Infinitiv kökü + -e`},
+    {baslik:"Pratik günlük kullanım", icerik:`Günlük dilde sıklıkla dass ile normal Indikativ kullanılır:<br><br>
+Sie sagt, dass sie morgen kommt.<br>
+Er meint, dass das Problem lösbar ist.<br>
+Ich glaube, dass er Recht hat.<br><br>
+Soru aktarımı: ob + yan cümle<br>
+Er fragt, ob ich Zeit habe.<br>
+= Vaktim olup olmadığını soruyor.`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'Er sagt: Ich komme morgen.' → İndirek:",o:["Er sagt, er kommt morgen.","Er sagt, er komme morgen.","Er sagt, dass ich morgen komme.","Beide A und B sind richtig."],a:3,e:"Hem dass+Indikativ (A) hem Konjunktiv I (B) doğru. Günlük: A. Resmi: B."},
+    {t:"fill",d:2,q:"Sie fragt, ___ ich Zeit habe. (ob - soru aktarımı)",c:"ob",e:"Soru aktarımı → ob. Sie fragt, OB ich Zeit habe = Vaktim olup olmadığını soruyor."},
+    {t:"mcq",d:3,q:"Konjunktiv I nerede özellikle kullanılır?",o:["Günlük konuşmada","Haber dili ve resmi metinlerde","Sadece şiirde","Sadece eski Almancada"],a:1,e:"Konjunktiv I haber dili (Zeitung, Nachrichten) ve resmi metinlerde kullanılır."}
+  ]
+},
+
+b1_infinitiv: {
+  lv:"B1", name:"Infinitivkonstruktionen", tr:"İnfinitif Yapıları",
+  anlatim:[
+    {baslik:"um...zu (amaç belirtmek)", icerik:`Amaç bildiren yan cümle. 'için' anlamında.<br><br>
+Ich lerne Deutsch, <b>um</b> in Deutschland <b>zu</b> arbeiten.<br>
+= Almanya'da çalışmak için Almanca öğreniyorum.<br><br>
+Ich spare Geld, um ein Auto zu kaufen.<br>
+= Araba almak için para biriktiriyorum.<br><br>
+Kural: um + ... + zu + Infinitiv (sonunda)`},
+    {baslik:"ohne...zu ve anstatt...zu", icerik:`<b>ohne...zu</b> = ...madan/maksızın<br>
+Er ging weg, ohne etwas zu sagen.<br>
+= Bir şey söylemeden gitti.<br><br>
+<b>anstatt...zu</b> = ...yerine/yapmak yerine<br>
+Anstatt zu lernen, spielt er.<br>
+= Çalışmak yerine oynuyor.`},
+    {baslik:"zu + Infinitiv ile fiiller", icerik:`Bazı fiiller zu + Infinitiv ister:<br><br>
+versuchen zu: Ich versuche, früh aufzustehen.<br>
+hoffen zu: Ich hoffe, dich bald zu sehen.<br>
+vergessen zu: Er hat vergessen, anzurufen.<br>
+beginnen zu: Sie beginnt, Deutsch zu lernen.<br>
+aufhören zu: Hör auf, so viel zu essen!<br><br>
+Trennbar fiillerde: auf<b>zu</b>stehen, an<b>zu</b>rufen`}
+  ],
+  sorular:[
+    {t:"fill",d:2,q:"Ich lerne Deutsch, ___ in Deutschland zu arbeiten. (amaç - um)",c:"um",e:"um...zu = için. Ich lerne Deutsch, UM ... zu arbeiten."},
+    {t:"mcq",d:2,q:"'Er ging, ohne etwas ___ sagen.' doğru form:",o:["zu sagen","sagen","gesagt","sagt"],a:0,e:"ohne...zu + Infinitiv: ohne etwas ZU sagen."},
+    {t:"fill",d:2,q:"Sie versucht, früh auf___stehen. (aufstehen - trennbar zu)",c:"zu",e:"Trennbar + zu: auf-ZU-stehen. Sie versucht, früh aufZUstehen."},
+    {t:"mcq",d:3,q:"'Anstatt zu lernen, spielt er.' Türkçesi:",o:["Öğrenmek için oynuyor","Öğrenmek yerine oynuyor","Öğrenirken oynuyor","Öğrendikten sonra oynuyor"],a:1,e:"anstatt...zu = yerine/yapmak yerine"}
+  ]
+},
+
+b1_zeitangaben: {
+  lv:"B1", name:"Zeitangaben & Temporalsätze", tr:"Zaman İfadeleri",
+  anlatim:[
+    {baslik:"Zaman bağlaçları", icerik:`<b>als</b> = ...iken, ...dığında (tek seferlik geçmiş olay)<br>
+Als ich jung war, spielte ich Fußball.<br>
+= Gençken futbol oynardım.<br><br>
+<b>wenn</b> = ...ince (tekrarlayan/gelecek)<br>
+Wenn ich Zeit habe, lese ich.<br>
+= Vaktim olduğunda okuyorum.<br><br>
+<b>während</b> = ...iken (eş zamanlı)<br>
+Während er schläft, arbeite ich.`},
+    {baslik:"seitdem, bevor, nachdem", icerik:`<b>seitdem/seit</b> = ...den beri (yan cümle)<br>
+Seitdem er in Berlin wohnt, ist er glücklich.<br><br>
+<b>bevor</b> = ...den önce<br>
+Bevor ich schlafe, lese ich.<br><br>
+<b>nachdem</b> = ...den sonra (zaman farkı önemli!)<br>
+Nachdem er gegessen hatte, ging er spazieren.<br>
+= Yedikten sonra yürüyüşe çıktı. (Plusquamperfekt!)`},
+    {baslik:"Zaman zarfları ve ifadeleri", icerik:`damals = o zamanlar, früher = eskiden<br>
+inzwischen = bu arada, seitdem = o zamandan beri<br>
+schließlich = sonunda, zunächst = önce<br>
+plötzlich = aniden, gleichzeitig = aynı anda<br><br>
+Zuerst..., dann..., danach..., schließlich...<br>
+= Önce..., sonra..., ardından..., en sonunda...`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'___ ich jung war, spielte ich viel.' (tek geçmiş olay)",o:["Wenn","Als","Während","Seitdem"],a:1,e:"als = tek seferlik geçmiş olay. wenn = tekrarlayan/gelecek."},
+    {t:"fill",d:2,q:"___ er schläft, arbeite ich. (eş zamanlı - während)",c:"Während",e:"während = ...iken (eş zamanlı). Während er schläft, arbeite ich."},
+    {t:"mcq",d:3,q:"'Nachdem er gegessen hatte, ...' neden Plusquamperfekt?",o:["Yanlış, Perfekt olmalı","Önce olan olay Plusquamperfekt","Prateritum da olabilir","Kurala göre zorunlu"],a:1,e:"nachdem ile önce olan olay Plusquamperfekt (hatte+PP) alır: hatte gegessen"},
+    {t:"fill",d:3,q:"___ er in Berlin wohnt, ist er happy. (...den beri, yan cümle)",c:"Seitdem",e:"Seitdem = ...den beri (yan cümle kurar, fiil sona)"}
+  ]
+},
+
+b1_wortbildung: {
+  lv:"B1", name:"Wortbildung", tr:"Kelime Türetme",
+  anlatim:[
+    {baslik:"İsim türetme ekleri", icerik:`<b>-ung (dişil):</b> wohnen→die Wohnung, lösen→die Lösung<br>
+<b>-heit/-keit (dişil):</b> krank→die Krankheit, möglich→die Möglichkeit<br>
+<b>-schaft (dişil):</b> Freund→die Freundschaft, Wirt→die Wirtschaft<br>
+<b>-nis (dişil/nötr):</b> erleben→das Erlebnis, ergebnis<br>
+<b>-er (eril - kişi):</b> arbeiten→der Arbeiter, fahren→der Fahrer`},
+    {baslik:"Sıfat türetme ekleri", icerik:`<b>-lich:</b> freund→freundlich, täg→täglich, möglich<br>
+<b>-ig:</b> Hunger→hungrig, Durst→durstig, windig<br>
+<b>-isch:</b> Türkei→türkisch, typisch, sportlich<br>
+<b>-los:</b> Arbeit→arbeitslos, hoffnungslos, sinnlos<br>
+<b>-voll:</b> Sinn→sinnvoll, hoffnungsvoll, hilfreich`},
+    {baslik:"Bileşik kelimeler (Komposita)", icerik:`Almanca'da iki veya daha fazla kelime birleşerek yeni kelime oluşturur. Son kelimenin artikeli geçer.<br><br>
+das Haus + die Tür = die Haustür<br>
+der Regen + der Schirm = der Regenschirm<br>
+die Hand + das Tuch = das Handtuch<br>
+der Fuß + der Ball = der Fußball<br>
+die Arbeit + die Zeit = die Arbeitszeit`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'die Möglichkeit' hangi kelimeden türetildi?",o:["mögen","möglichst","möglich","Mögliches"],a:2,e:"möglich + -keit = die Möglichkeit. -keit eki sıfattan dişil isim türetir."},
+    {t:"fill",d:2,q:"der Regen + der Schirm = der ___ (bileşik kelime)",c:"Regenschirm",e:"Regenschirm = şemsiye. Bileşikte son kelimenin artikeli geçer: der Schirm → der Regenschirm"},
+    {t:"mcq",d:3,q:"'arbeitslos' ne demek?",o:["Çok çalışkan","İşsiz","İş arayan","Serbest çalışan"],a:1,e:"-los = ...sız/...siz. arbeitslos = işsiz. hoffnungslos = umutsuz"}
+  ]
+},
+
+b1_redemittel: {
+  lv:"B1", name:"Redemittel & Meinung", tr:"İfade Araçları & Görüş Bildirme",
+  anlatim:[
+    {baslik:"Görüş bildirme", icerik:`Meiner Meinung nach... = Bence / Benim görüşüme göre...<br>
+Ich bin der Meinung, dass... = ...olduğu kanısındayım.<br>
+Ich finde, dass... = ...olduğunu düşünüyorum.<br>
+Ich glaube/denke, dass... = ...olduğuna inanıyorum.<br>
+Aus meiner Sicht... = Benim açımdan...<br>
+Ich bin davon überzeugt, dass... = ...konusunda ikna olmuş durumdayım.`},
+    {baslik:"Karşı görüş ve tartışma", icerik:`Auf der einen Seite..., auf der anderen Seite...<br>
+= Bir yandan..., öte yandan...<br><br>
+Zwar..., aber... = Her ne kadar..., ama...<br>
+Einerseits..., andererseits... = Bir açıdan..., başka açıdan...<br><br>
+Ich bin anderer Meinung. = Farklı düşünüyorum.<br>
+Das sehe ich anders. = Bunu farklı görüyorum.<br>
+Ich widerspreche Ihnen. = Size katılmıyorum.`},
+    {baslik:"Nedenleme ve sonuç çıkarma", icerik:`deshalb/deswegen/daher = bu yüzden/bu nedenle<br>
+denn = çünkü (ana cümle)<br>
+weil = çünkü (yan cümle)<br>
+trotzdem = yine de/buna rağmen<br>
+Infolgedessen = bu sonucu olarak<br>
+Es liegt daran, dass... = Bunun sebebi şu ki...`}
+  ],
+  sorular:[
+    {t:"mcq",d:1,q:"'Meiner Meinung nach' ne demek?",o:["Senin görüşüne göre","Bence/benim görüşüme göre","Genel görüşe göre","Uzman görüşüne göre"],a:1,e:"Meiner Meinung nach = bence, benim görüşüme göre"},
+    {t:"fill",d:2,q:"___ einer Seite ist das gut, ___ anderen Seite schlecht. (Auf - Bir yandan... öte yandan...)",c:"Auf der einen Seite... auf der anderen Seite",e:"Auf der einen Seite..., auf der anderen Seite... = Bir yandan..., öte yandan..."},
+    {t:"mcq",d:2,q:"'Zwar ist es teuer, ___ es ist gut.' doğru tamamlama:",o:["weil","denn","aber","deshalb"],a:2,e:"Zwar..., ABER... = Her ne kadar..., ama... Zıtlık bildirme yapısı."}
+  ]
+},
+
+// ══════════════════════════════════════════════════════════════════════════════
+// B2 KONULARI
+// ══════════════════════════════════════════════════════════════════════════════
+
+b2_erweiterte_passiv: {
+  lv:"B2", name:"Erweitertes Passiv", tr:"Gelişmiş Edilgen Yapılar",
+  anlatim:[
+    {baslik:"Zustandspassiv (sein + PP)", icerik:`<b>Vorgangspassiv</b> (werden): Eylem devam ediyor<br>
+Die Tür wird geschlossen. = Kapı kapatılıyor.<br><br>
+<b>Zustandspassiv</b> (sein): Eylem tamamlanmış, sonuç var<br>
+Die Tür ist geschlossen. = Kapı kapalı (sonuç).<br><br>
+Das Formular ist ausgefüllt. = Form doldurulmuş (hazır).<br>
+Die Aufgabe ist erledigt. = Görev tamamlanmış.`},
+    {baslik:"Passiv Infinitiv ve modal fiiller", icerik:`Modal + werden + PP (Infinitiv passiv):<br><br>
+Das muss gemacht werden. = Bu yapılmalı.<br>
+Das kann nicht geändert werden. = Bu değiştirilemez.<br>
+Das sollte verboten werden. = Bu yasaklanmalı.<br><br>
+Passiv Perfekt: ist/sind + PP + worden<br>
+Das Haus ist gebaut worden. = Ev inşa edilmiştir.`},
+    {baslik:"Passiv alternatifi: man, sich lassen", icerik:`<b>man:</b> Man spricht hier Deutsch. = Burada Almanca konuşulur.<br><br>
+<b>sich lassen + Infinitiv:</b> aktif anlam, pasif etki<br>
+Das lässt sich machen. = Bu yapılabilir.<br>
+Das Fenster lässt sich nicht öffnen. = Pencere açılamıyor.<br><br>
+<b>sein + zu + Infinitiv:</b><br>
+Das ist zu beachten. = Bu dikkate alınmalı.`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'Die Tür ist geschlossen' vs 'wird geschlossen' farkı?",o:["Fark yok","ist=sonuç hali, wird=devam eden eylem","ist=geçmiş, wird=gelecek","ist=aktif, wird=pasif"],a:1,e:"Zustandspassiv (ist+PP) = sonuç. Vorgangspassiv (wird+PP) = devam eden eylem."},
+    {t:"fill",d:2,q:"Das ___ gemacht werden. (müssen - Modal + Passiv Infinitiv)",c:"muss",e:"Modal + werden + PP. Das MUSS gemacht werden = Bu yapılmalı."},
+    {t:"mcq",d:3,q:"'Das lässt sich leicht lösen.' Türkçesi:",o:["Bu kolayca çözülür","Bu kolay çözer","Bu kendini çözdürür","Bu kolayca çözüyor"],a:0,e:"sich lassen + Infinitiv = ...abilmek (pasif anlam). lässt sich lösen = çözülebilir"}
+  ]
+},
+
+b2_praepositionen: {
+  lv:"B2", name:"Komplexe Präpositionen", tr:"Karmaşık Edatlar",
+  anlatim:[
+    {baslik:"Genitiv edatları", icerik:`<b>wegen</b> = ...nedeniyle: wegen des Wetters<br>
+<b>trotz</b> = ...rağmen: trotz des Regens<br>
+<b>während</b> = ...sırasında: während der Arbeit<br>
+<b>aufgrund</b> = ...nedeniyle: aufgrund der Situation<br>
+<b>anstatt/statt</b> = ...yerine: statt des Kaffees<br>
+<b>innerhalb</b> = ...içinde: innerhalb einer Woche<br>
+<b>außerhalb</b> = ...dışında: außerhalb der Stadt`},
+    {baslik:"İki kez Dativ edatları", icerik:`<b>gegenüber</b> = karşısında (kişi önce gelir!)<br>
+dem Bahnhof gegenüber / gegenüber dem Bahnhof<br><br>
+<b>entlang</b> = boyunca (Akk veya Dat)<br>
+den Fluss entlang / entlang des Flusses<br><br>
+<b>zufolge</b> = ...e göre (genellikle kişi önce)<br>
+dem Bericht zufolge = rapora göre`},
+    {baslik:"İki anlamlı edatlar: Wechselpräpositionen gelişmiş", icerik:`Kalıplaşmış ifadeler:<br>
+im Bett liegen (Dat) = yatakta yatmak<br>
+ins Bett gehen (Akk) = yatağa gitmek<br>
+am Tisch sitzen (Dat) = masada oturmak<br>
+an den Tisch setzen (Akk) = masaya oturmak<br><br>
+Kombinasyonlar: am=an+dem, im=in+dem, ans=an+das, ins=in+das, beim=bei+dem, vom=von+dem, zum=zu+dem, zur=zu+der`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'___ des schlechten Wetters blieben wir zu Hause.' (Rağmen - Genitiv)",o:["Wegen","Trotz","Während","Aufgrund"],a:1,e:"trotz + Genitiv = ...rağmen. Trotz des schlechten Wetters..."},
+    {t:"fill",d:2,q:"___ der Arbeit höre ich Musik. (sırasında - während)",c:"Während",e:"während + Genitiv = ...sırasında. Während der Arbeit höre ich Musik."},
+    {t:"mcq",d:3,q:"'aufgrund' hangi hali yönetir?",o:["Akkusativ","Dativ","Genitiv","Nominativ"],a:2,e:"aufgrund + Genitiv. aufgrund der Situation, aufgrund des Problems"}
+  ]
+},
+
+b2_modalpartikeln: {
+  lv:"B2", name:"Modalpartikeln", tr:"Modal Partiküller",
+  anlatim:[
+    {baslik:"Modal partiküller nedir?", icerik:`Cümleye nüans, his ve ton katan kelimecikler. Çevrilmesi zor, ama çok önemli!<br><br>
+<b>doch</b> = zaten/ya/de (olumlu beklenti):<br>
+Das weißt du doch! = Bunu zaten biliyorsun!<br>
+Komm doch mit! = Haydi gel ya!<br><br>
+<b>ja</b> = zaten/ki (ortak bilgi):<br>
+Du weißt ja, dass... = Zaten biliyorsun ki...`},
+    {baslik:"Sık kullanılan partiküller", icerik:`<b>mal</b> = bir (yumuşatma):<br>
+Kannst du mal kommen? = Bir gelebilir misin?<br><br>
+<b>eigentlich</b> = aslında/özünde:<br>
+Eigentlich wollte ich früher kommen. = Aslında daha erken gelmek istiyordum.<br><br>
+<b>eben/halt</b> = işte/ne yapalım:<br>
+Das ist eben so. = İşte böyle.<br><br>
+<b>wohl</b> = galiba/muhtemelen:<br>
+Er ist wohl krank. = Galiba hasta.`},
+    {baslik:"Tonlamayla değişen anlamlar", icerik:`<b>doch</b> vurguya göre:<br>
+Er kommt DOCH. = (Sanmıyordum ama) geliyor.<br>
+Komm DOCH! = Artık gel ya!<br><br>
+<b>aber</b> = ama (pekiştirme, özellikle şaşırma):<br>
+Das ist aber schön! = Bu gerçekten çok güzel!<br><br>
+<b>bloß/nur</b> = sadece (kaygı/tehdit):<br>
+Pass bloß auf! = Dikkat et ha!`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'Komm doch mit!' cümlesinde 'doch' ne işlevi görür?",o:["Olumsuzlama","Geçmiş zaman","Teşvik/yumuşatma","Soru oluşturma"],a:2,e:"doch = teşvik/yumuşatma. Haydi gel ya! anlamında."},
+    {t:"fill",d:2,q:"Er ist ___ krank. (galiba/muhtemelen - wohl)",c:"wohl",e:"wohl = galiba, muhtemelen. Er ist WOHL krank = Galiba hasta."},
+    {t:"mcq",d:3,q:"'Eigentlich' ne anlama gelir?",o:["Gerçekten","Kesinlikle","Aslında/özünde","Sonunda"],a:2,e:"eigentlich = aslında, özünde. Eigentlich wollte ich... = Aslında istiyordum..."}
+  ]
+},
+
+b2_nominalstil: {
+  lv:"B2", name:"Nominalstil", tr:"İsim Tarzı (Resmi Dil)",
+  anlatim:[
+    {baslik:"Nominalstil nedir?", icerik:`Resmi yazışma, akademik ve gazetecilik dilinde fiiller yerine isim grupları kullanılır.<br><br>
+<b>Verbal:</b> Die Preise steigen. = Fiyatlar yükseliyor.<br>
+<b>Nominal:</b> Ein Anstieg der Preise ist zu beobachten.<br>
+= Fiyatlarda bir artış gözlemlenmektedir.<br><br>
+Verbal: Das Problem lösen wir.<br>
+Nominal: Die Lösung des Problems erfolgt...`},
+    {baslik:"Fiilden isim türetme", icerik:`entscheiden → die Entscheidung<br>
+entwickeln → die Entwicklung<br>
+beobachten → die Beobachtung<br>
+untersuchen → die Untersuchung<br>
+verbessern → die Verbesserung<br><br>
+steigen → der Anstieg/die Steigerung<br>
+fallen → der Rückgang/die Senkung<br>
+lösen → die Lösung<br>
+fördern → die Förderung`},
+    {baslik:"Typische Nominalstil-Konstruktionen", icerik:`in Betracht ziehen = dikkate almak<br>
+zur Verfügung stellen = sağlamak/sunmak<br>
+Bezug nehmen auf = ...e atıfta bulunmak<br>
+in Frage kommen = söz konusu olmak<br>
+zum Ausdruck bringen = ifade etmek<br>
+in Anspruch nehmen = yararlanmak<br>
+Rechnung tragen = hesaba katmak<br>
+eine Rolle spielen = rol oynamak`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"'Die Preise steigen.' Nominalstil dönüşümü:",o:["Ein Preissteigung.","Ein Anstieg der Preise.","Die Preise haben gestiegen.","Steigern die Preise."],a:1,e:"Nominalstil: Ein Anstieg der Preise (ist zu beobachten). steigen → Anstieg"},
+    {t:"fill",d:3,q:"zur ___ stellen = sunmak/sağlamak (Verfügung)",c:"Verfügung",e:"zur Verfügung stellen = sağlamak, sunmak. Önemli Nominalstil ifadesi!"},
+    {t:"mcq",d:3,q:"Nominalstil neden kullanılır?",o:["Konuşmayı kolaylaştırmak","Resmi/akademik metinlerde kesinlik ve yoğunluk","Gramer kurallarını çiğnemek","Sadece şiirde"],a:1,e:"Nominalstil resmi, akademik ve gazete dilinde sıkıştırılmış/yoğun ifade için kullanılır."}
+  ]
+},
+
+b2_textsorten: {
+  lv:"B2", name:"Textsorten & Schreiben", tr:"Metin Türleri & Yazma",
+  anlatim:[
+    {baslik:"Resmi mektup/e-posta yapısı", icerik:`<b>Başlık:</b> Betreff: Bewerbung als Ingenieur<br><br>
+<b>Selamlama:</b><br>
+Sehr geehrte Damen und Herren, (kişi bilinmiyorsa)<br>
+Sehr geehrter Herr Müller, (erkek)<br>
+Sehr geehrte Frau Schmidt, (kadın)<br><br>
+<b>Giriş:</b> Hiermit bewerbe ich mich um...<br>
+Ich schreibe Ihnen bezüglich...<br>
+Bezugnehmend auf Ihre Anzeige...<br><br>
+<b>Kapanış:</b> Mit freundlichen Grüßen<br>
+Hochachtungsvoll (çok resmi)`},
+    {baslik:"Tartışma/Essay yazma", icerik:`<b>Giriş:</b> Das Thema... ist heutzutage sehr aktuell.<br>
+In diesem Aufsatz möchte ich...<br><br>
+<b>Argüman sunma:</b><br>
+Erstens/Zunächst... Zweitens/Darüber hinaus...<br>
+Ein weiterer Aspekt ist...<br>
+Es ist zu beachten, dass...<br><br>
+<b>Sonuç:</b> Zusammenfassend lässt sich sagen...<br>
+Abschließend möchte ich betonen...<br>
+Meiner Meinung nach...`},
+    {baslik:"Özetleme (Zusammenfassung)", icerik:`In dem Text geht es um... = Metinde konu şu...<br>
+Der Autor/Die Autorin argumentiert, dass...<br>
+Zunächst wird beschrieben... dann...<br>
+Der Hauptgedanke ist...<br>
+Abschließend wird betont, dass...<br><br>
+Wichtig: Eigene Meinung NICHT einbringen!<br>
+Konjunktiv I verwenden: Er sagt, es sei...`}
+  ],
+  sorular:[
+    {t:"mcq",d:2,q:"Resmi mektupta doğru kapanış:",o:["Tschüss!","Bis bald!","Mit freundlichen Grüßen","Liebe Grüße"],a:2,e:"Mit freundlichen Grüßen = resmi kapanış. Liebe Grüße = samimi, Tschüss = çok samimi."},
+    {t:"fill",d:2,q:"___ lässt sich sagen, dass das Thema wichtig ist. (Sonuç - Zusammenfassend)",c:"Zusammenfassend",e:"Zusammenfassend lässt sich sagen = Özetle söylemek gerekirse"},
+    {t:"mcq",d:3,q:"Essay'de argüman sıralaması için:",o:["Aber, doch, mal","Erstens, zweitens, schließlich","Weil, obwohl, wenn","Gestern, heute, morgen"],a:1,e:"Erstens (birincisi), zweitens (ikincisi), schließlich/zuletzt (son olarak)"}
+  ]
+},
+
+// ══════════════════════════════════════════════════════════════════════════════
+// C1 KONULARI
+// ══════════════════════════════════════════════════════════════════════════════
+
+c1_konjunktiv1: {
+  lv:"C1", name:"Konjunktiv I vertieft", tr:"Konjunktiv I (Derinlemesine)",
+  anlatim:[
+    {baslik:"Konjunktiv I tam çekim", icerik:`<b>sein:</b> ich sei, du sei(e)st, er/sie sei, wir seien, ihr seiet, sie seien<br>
+<b>haben:</b> er habe, sie haben<br>
+<b>kommen:</b> er komme, sie kommen<br>
+<b>werden:</b> er werde<br>
+<b>können:</b> er könne<br><br>
+Kural: Infinitiv kökü + -e (Indikativ ile aynıysa Konjunktiv II kullan!)<br>
+Örnek: kommen → er kommt (Ind.) = er komme (K.I) farklı → K.I kullanılır<br>
+machen → er macht (Ind.) = er mache (K.I) farklı → K.I kullanılır`},
+    {baslik:"Haber dilinde kullanım", icerik:`Gazetelerde ve haberlerde kaynak belirtmek için:<br><br>
+Der Minister erklärte, er sei nicht schuldig.<br>
+= Bakan, suçsuz olduğunu açıkladı.<br><br>
+Die Studie zeigt, dass die Temperaturen steigen <b>würden</b>.<br>
+(Konjunktiv I ile Indikativ aynıysa Konjunktiv II)<br><br>
+Laut dem Bericht sei die Lage ernst.<br>
+= Rapora göre durum ciddi (imiş).`},
+    {baslik:"Konjunktiv I vs II özet", icerik:`<b>Konjunktiv I:</b> dolaylı anlatım (indirekte Rede)<br>
+Er sagt, er sei krank. = Hasta olduğunu söylüyor.<br><br>
+<b>Konjunktiv II:</b> gerçek olmayan/kibarlık<br>
+Er wäre gern Arzt. = Doktor olmak isterdi.<br><br>
+<b>Überschneidung:</b> K.I Indikativ ile aynıysa K.II<br>
+Sie sagen, sie kämen morgen. (K.II, çünkü kommen çoğul K.I = kommen = Ind.)`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'er kommt' Konjunktiv I formu?",o:["er kommt","er käme","er komme","er kämt"],a:2,e:"kommen Konjunktiv I 3. tekil: er komme. Infinitiv kökü + e."},
+    {t:"fill",d:3,q:"Der Minister sagte, er ___ nicht schuldig. (sein K.I)",c:"sei",e:"sein Konjunktiv I 3. tekil: sei. Er sagte, er SEI nicht schuldig."},
+    {t:"mcq",d:3,q:"Neden bazen K.I yerine K.II kullanılır?",o:["Daha kolay","K.I Indikativ ile aynı görünüyorsa","Daha resmi","K.I eskimiş"],a:1,e:"K.I ile Indikativ aynı görünüyorsa (karışıklık olmasın diye) K.II kullanılır."}
+  ]
+},
+
+c1_stilistik: {
+  lv:"C1", name:"Stilistik & Variation", tr:"Üslup & Çeşitleme",
+  anlatim:[
+    {baslik:"Üslup seviyeleri (Register)", icerik:`<b>Umgangssprache</b> (günlük konuşma):<br>
+Ich hab' keine Ahnung. / Das is' cool.<br><br>
+<b>Standardsprache</b> (standart):<br>
+Ich habe keine Ahnung. / Das ist interessant.<br><br>
+<b>Gehobene Sprache</b> (yüksek üslup):<br>
+Ich bin darüber nicht im Klaren.<br>
+Das erscheint mir bemerkenswert.<br><br>
+<b>Wissenschaftssprache</b>:<br>
+Es lässt sich feststellen, dass... / Die Untersuchung ergibt...`},
+    {baslik:"Sözdizimsel çeşitleme", icerik:`Aynı içeriği farklı yapılarla ifade etmek:<br><br>
+<b>Aktif → Passiv:</b><br>
+Man diskutiert das Problem. → Das Problem wird diskutiert.<br><br>
+<b>Nebensatz → Nominalstil:</b><br>
+Weil er krank ist → aufgrund seiner Krankheit<br><br>
+<b>Konjunktional → Partizipialkonstruktion:</b><br>
+Als er ankam → Bei seiner Ankunft / Angekommen, ...`},
+    {baslik:"Partizipialkonstruktionen (İleri seviye)", icerik:`Partizip I (devam eden) ve Partizip II (tamamlanan) yan cümle yerine:<br><br>
+<b>Partizip I:</b> arbeitend, singend, lachend<br>
+Die singende Frau = şarkı söyleyen kadın<br>
+Er kam singend herein. = Şarkı söyleyerek girdi.<br><br>
+<b>Partizip II:</b><br>
+Das gelesene Buch = okunan kitap<br>
+Erschöpft von der Arbeit, schlief er ein.<br>
+= İşten bitkin düşmüş, uyuya kaldı.`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'Weil er krank ist' Nominalstil dönüşümü:",o:["während seiner Krankheit","aufgrund seiner Krankheit","trotz seiner Krankheit","wegen krank sein"],a:1,e:"weil (sebep) → aufgrund + Genitiv. aufgrund seiner Krankheit = hastalandığı için"},
+    {t:"fill",d:3,q:"Die ___ Frau heißt Maria. (singen - Partizip I, şarkı söyleyen)",c:"singende",e:"Partizip I: singen + d = singend → singende (sıfat eki ile). die singende Frau"},
+    {t:"mcq",d:3,q:"'Es lässt sich feststellen' hangi dile aittir?",o:["Günlük konuşma","Standart Almanca","Bilim/akademik dil","Eski Almanca"],a:2,e:"lässt sich feststellen = Wissenschaftssprache. Akademik metinlerde 'man kann feststellen' yerine."}
+  ]
+},
+
+c1_argumentieren: {
+  lv:"C1", name:"Argumentieren & Diskutieren", tr:"Tartışma & Savunma",
+  anlatim:[
+    {baslik:"Güçlü argüman yapısı (PEEL)", icerik:`<b>P</b>oint (Tez): Meiner These zufolge...<br>
+<b>E</b>xplain (Açıklama): Das bedeutet, dass...<br>
+<b>E</b>vidence (Kanıt): Studien belegen, dass... / Laut Statistik...<br>
+<b>L</b>ink (Bağlantı): Daher lässt sich schließen, dass...<br><br>
+Es ist unbestreitbar, dass... = İnkar edilemez ki...<br>
+Die Forschung zeigt eindeutig... = Araştırma açıkça gösteriyor...`},
+    {baslik:"Karşı tezi çürütme", icerik:`Zwar mag es stimmen, dass..., jedoch... = Her ne kadar doğru olsa da..., ancak...<br>
+Dieses Argument überzeugt mich nicht, weil... = Bu argüman beni ikna etmiyor çünkü...<br>
+Man könnte einwenden, dass..., aber dem ist entgegenzuhalten, dass...<br>
+= ...itiraz edilebilir, ama buna karşı şunu söylemek gerekir ki...<br>
+Das ist zwar richtig, greift aber zu kurz. = Bu doğru, ama yeterli değil.`},
+    {baslik:"Akademik yazıda sıklıkla kullanılanlar", icerik:`Im Folgenden wird untersucht... = Aşağıda incelenecektir...<br>
+Anhand von Beispielen wird deutlich... = Örnekler aracılığıyla açıkça görülmektedir...<br>
+Zu berücksichtigen ist... = Göz önünde bulundurulmalı ki...<br>
+Es ergibt sich folgendes Bild: = Şu tablo ortaya çıkmaktadır:<br>
+Kritisch anzumerken ist... = Eleştirel olarak belirtmek gerekir ki...<br>
+Zusammenfassend lässt sich festhalten... = Özetle şunu tespit etmek mümkündür...`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'Zwar mag es stimmen, dass..., jedoch...' yapısı ne için?",o:["Kendi görüşü sunmak","Karşı görüşü kabul edip ama çürütmek","Tanım yapmak","Örnek vermek"],a:1,e:"Zwar...jedoch = konsesyon yapısı: kısmen kabul et, sonra çürüt."},
+    {t:"fill",d:3,q:"___ lässt sich feststellen, dass das Thema komplex ist. (Özetle - Zusammenfassend)",c:"Zusammenfassend",e:"Zusammenfassend lässt sich feststellen = Özetle tespit etmek mümkündür"},
+    {t:"mcq",d:3,q:"'Anhand von Beispielen' ne demek?",o:["Örneklerle birlikte","Örneklere rağmen","Örnekler sayesinde/aracılığıyla","Örnekler yerine"],a:2,e:"anhand von = aracılığıyla, yardımıyla. Anhand von Beispielen = örnekler aracılığıyla"}
+  ]
+},
+
+c1_wissenschaft: {
+  lv:"C1", name:"Wissenschaftliche Texte", tr:"Akademik Metinler",
+  anlatim:[
+    {baslik:"Akademik metin yapısı", icerik:`<b>Abstract/Zusammenfassung:</b> Kısa özet<br>
+<b>Einleitung:</b> Die vorliegende Arbeit befasst sich mit...<br>
+<b>Hauptteil:</b> Im ersten Kapitel wird... untersucht.<br>
+<b>Schluss:</b> Abschließend lässt sich resümieren...<br><br>
+Akademik metinde:<br>
+• Kişisel zamir (ich) mümkün olduğunca az<br>
+• Passiv ve man kullanımı yaygın<br>
+• Nominalstil hâkim`},
+    {baslik:"Referans ve atıf yapısı", icerik:`Laut Schmidt (2020) ist... = Schmidt'e (2020) göre...<br>
+Wie Müller betont,... = Müller'in vurguladığı gibi...<br>
+Im Einklang mit dieser These... = Bu tezle uyumlu olarak...<br>
+Im Widerspruch dazu steht... = Buna karşıt olarak...<br>
+Wie bereits erwähnt,... = Daha önce belirtildiği gibi...<br>
+Es sei darauf hingewiesen, dass... = Şuna dikkat çekilmeli ki...`},
+    {baslik:"Hedging (Kesinleştirmeden kaçınma)", icerik:`Akademik dilde iddia yumuşatma (hedging) önemlidir:<br><br>
+Es scheint, dass... = Görünüşe göre...<br>
+Möglicherweise... = Muhtemelen...<br>
+Es ist anzunehmen, dass... = ...varsayılabilir<br>
+Die Ergebnisse legen nahe, dass... = Sonuçlar ...olduğuna işaret ediyor<br>
+Es könnte argumentiert werden, dass... = ...iddia edilebilir<br>
+Tendenziell... = Genel eğilim olarak...`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'Laut Schmidt (2020)' akademik metinde ne işlevi görür?",o:["Kişisel görüş bildirme","Kaynak gösterme/atıf","Karşı görüş","Sonuç bildirme"],a:1,e:"Laut + kaynak = atıf/referans. Akademik metinde başkalarının görüşlerini aktarmak için."},
+    {t:"fill",d:3,q:"Die Ergebnisse ___ nahe, dass... (legen - sonuçlar işaret ediyor)",c:"legen",e:"nahelegen = işaret etmek, ima etmek. Die Ergebnisse LEGEN nahe, dass... (önemli akademik ifade!)"},
+    {t:"mcq",d:3,q:"Hedging neden kullanılır?",o:["İddiayı güçlendirmek","Kesinliği azaltarak bilimsel dürüstlük göstermek","Metni kısaltmak","Pasif yapmak"],a:1,e:"Hedging = iddia yumuşatma. Bilimsel kesinliğin sınırlarını göstermek için önemlidir."}
+  ]
+},
+
+c1_idiomatik: {
+  lv:"C1", name:"Idiome & Phraseologismen", tr:"Deyimler & Kalıp İfadeler",
+  anlatim:[
+    {baslik:"Yaygın Almanca deyimler", icerik:`auf den Punkt kommen = konuya gelmek<br>
+unter vier Augen = baş başa (dört göz = iki kişi)<br>
+den Nagel auf den Kopf treffen = tam isabet etmek<br>
+Daumen drücken = başarılar dilemek (parmak çapraz yapmak)<br>
+ins Fettnäpfchen treten = pot kırmak<br>
+die Katze im Sack kaufen = kör alışveriş yapmak<br>
+Eulen nach Athen tragen = götüre götürmek gitmek`},
+    {baslik:"Gövde deyimleri (Körperteile)", icerik:`die Nase voll haben = bıkmak (burnu dolmak)<br>
+auf eigenen Füßen stehen = bağımsız olmak<br>
+Hals über Kopf = başı göğsünde (aceleyle)<br>
+unter die Arme greifen = yardım etmek<br>
+jemandem auf die Nerven gehen = sinir olmak<br>
+ein Auge zudrücken = göz yummak<br>
+Hand und Fuß haben = sağlam/mantıklı olmak`},
+    {baslik:"Renk deyimleri ve hayvan deyimleri", icerik:`<b>Renkler:</b><br>
+ins Blaue fahren = nereye gideceğini bilmeden gitmek<br>
+rot sehen = öfkelenmek<br>
+grün und blau schlagen = morarmak<br><br>
+<b>Hayvanlar:</b><br>
+da liegt der Hund begraben = işte sorun orada<br>
+den Teufel an die Wand malen = kötümser düşünmek<br>
+wie die Katze um den heißen Brei gehen = lafı dolandırmak`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'Den Nagel auf den Kopf treffen' ne demek?",o:["Çiviyi çakmak","Tam isabet etmek","Kafaya vurmak","Yanlış anlamak"],a:1,e:"den Nagel auf den Kopf treffen = tam isabet etmek, tam doğrusunu söylemek"},
+    {t:"fill",d:3,q:"Ich habe die ___ voll von dieser Arbeit! (bıktım - Nase)",c:"Nase",e:"die Nase voll haben = bıkmak. Ich habe die Nase voll = Bıktım artık!"},
+    {t:"mcq",d:3,q:"'Eulen nach Athen tragen' ne anlama gelir?",o:["Hediye götürmek","Gereksiz bir şeyi zaten çok olan yere götürmek","Yolculuk yapmak","Hayvan taşımak"],a:1,e:"Eulen nach Athen = baykuşu Atina'ya götürmek = götüre götürmek gitmek (anlamsız işi yapmak)"}
+  ]
+},
+
+c1_diskursmarker: {
+  lv:"C1", name:"Diskursmarker", tr:"Söylem İşaretçileri",
+  anlatim:[
+    {baslik:"Metin bağlantı araçları", icerik:`<b>Ekleme:</b> darüber hinaus, außerdem, ferner, überdies, des Weiteren<br>
+<b>Karşıtlık:</b> hingegen, wohingegen, im Gegensatz dazu, allerdings, dennoch<br>
+<b>Sebep-sonuç:</b> folglich, demzufolge, infolgedessen, daher, somit<br>
+<b>Örnekleme:</b> zum Beispiel, etwa, nämlich, und zwar, wie etwa<br>
+<b>Kısıtlama:</b> allerdings, jedoch, zwar...aber, immerhin`},
+    {baslik:"Açıklama ve vurgu işaretçileri", icerik:`Das heißt (d.h.) = yani/demek ki<br>
+Das bedeutet = bu demektir<br>
+mit anderen Worten = başka bir deyişle<br>
+genauer gesagt = daha doğrusu<br>
+insbesondere = özellikle<br>
+vor allem = her şeyden önce/özellikle<br>
+nämlich = çünkü/yani (açıklama)<br>
+und zwar = şöyle ki/tam olarak`},
+    {baslik:"Konuşmada yapı işaretçileri", icerik:`Um zum Thema zu kommen... = Konuya gelmek gerekirse...<br>
+Was ... angeht/betrifft... = ...konusuna gelince...<br>
+Ich komme nun zu... = Şimdi ...a geliyorum<br>
+Das führt uns zu der Frage... = Bu bizi şu soruya götürüyor:<br>
+Lassen Sie mich abschließend... = İzin verin, sonuç olarak...<br>
+Ich möchte noch hinzufügen, dass... = Şunu da eklemek istiyorum ki...`}
+  ],
+  sorular:[
+    {t:"mcq",d:3,q:"'darüber hinaus' ne işlevi görür?",o:["Karşıtlık","Sebep","Ekleme/ilave","Örnekleme"],a:2,e:"darüber hinaus = bunun ötesinde, ayrıca. Ekleme işlevi görür."},
+    {t:"fill",d:3,q:"Das Projekt war erfolgreich. ___ gab es einige Probleme. (Buna rağmen - Allerdings)",c:"Allerdings",e:"allerdings = her ne kadar/bununla birlikte. Kısıtlama işaretçisi."},
+    {t:"mcq",d:3,q:"'nämlich' hangi işlevde kullanılmaz?",o:["Açıklama","Sebep bildirme","Karşıtlık bildirme","Vurgu"],a:2,e:"nämlich = açıklama ve sebep için. Karşıtlık için hingegen/jedoch kullanılır."}
+  ]
+}
+
+}); // end Object.assign
+
+
+
 var TOPICS = [
   {key:"begr",lv:"A1",name:"Begrüßung & Abschied",tr:"Selam & Veda",icon:"&#128075;"},
   {key:"zahlen",lv:"A1",name:"Zahlen & Uhrzeit",tr:"Sayilar & Saat",icon:"&#128290;"},
@@ -1478,7 +2112,26 @@ var TOPICS = [
   {key:"a2_konjunktionen",lv:"A2",name:"Konjunktionen",tr:"Bağlaçlar",icon:"&#128257;"},
   {key:"a2_modal",lv:"A2",name:"Modalverben A2",tr:"Modal Fiiller",icon:"&#9889;"},
   {key:"a2_adjektiv",lv:"A2",name:"Adjektivdeklination",tr:"Sıfat Çekimi",icon:"&#127775;"},
-  {key:"a2_trennbar",lv:"A2",name:"Trennbare Verben",tr:"Ayrılabilen Fiiller",icon:"&#9986;"}
+  {key:"a2_trennbar",lv:"A2",name:"Trennbare Verben",tr:"Ayrılabilen Fiiller",icon:"&#9986;"},
+  {key:"b1_konjunktiv2",lv:"B1",name:"Konjunktiv II",tr:"Dilek/Kibarlık Kipi",icon:"&#128161;"},
+  {key:"b1_passiv",lv:"B1",name:"Passiv",tr:"Edilgen Çatı",icon:"&#128260;"},
+  {key:"b1_relativsatz",lv:"B1",name:"Relativsätze",tr:"İlgi Cümleleri",icon:"&#128279;"},
+  {key:"b1_indirekterede",lv:"B1",name:"Indirekte Rede",tr:"Dolaylı Anlatım",icon:"&#128483;"},
+  {key:"b1_infinitiv",lv:"B1",name:"Infinitivkonstruktionen",tr:"İnfinitif Yapıları",icon:"&#9883;"},
+  {key:"b1_zeitangaben",lv:"B1",name:"Zeitangaben",tr:"Zaman İfadeleri",icon:"&#128336;"},
+  {key:"b1_wortbildung",lv:"B1",name:"Wortbildung",tr:"Kelime Türetme",icon:"&#128290;"},
+  {key:"b1_redemittel",lv:"B1",name:"Redemittel",tr:"Görüş Bildirme",icon:"&#128172;"},
+  {key:"b2_erweiterte_passiv",lv:"B2",name:"Erweitertes Passiv",tr:"Gelişmiş Edilgen",icon:"&#128260;"},
+  {key:"b2_praepositionen",lv:"B2",name:"Komplexe Präpositionen",tr:"Karmaşık Edatlar",icon:"&#127919;"},
+  {key:"b2_modalpartikeln",lv:"B2",name:"Modalpartikeln",tr:"Modal Partiküller",icon:"&#127800;"},
+  {key:"b2_nominalstil",lv:"B2",name:"Nominalstil",tr:"İsim Tarzı",icon:"&#128203;"},
+  {key:"b2_textsorten",lv:"B2",name:"Textsorten",tr:"Metin Türleri",icon:"&#128221;"},
+  {key:"c1_konjunktiv1",lv:"C1",name:"Konjunktiv I",tr:"Konjunktiv I (Derin)",icon:"&#127775;"},
+  {key:"c1_stilistik",lv:"C1",name:"Stilistik",tr:"Üslup & Çeşitleme",icon:"&#127912;"},
+  {key:"c1_argumentieren",lv:"C1",name:"Argumentieren",tr:"Tartışma & Savunma",icon:"&#129488;"},
+  {key:"c1_wissenschaft",lv:"C1",name:"Wissenschaftliche Texte",tr:"Akademik Metinler",icon:"&#128214;"},
+  {key:"c1_idiomatik",lv:"C1",name:"Idiome",tr:"Deyimler & Kalıplar",icon:"&#128512;"},
+  {key:"c1_diskursmarker",lv:"C1",name:"Diskursmarker",tr:"Söylem İşaretçileri",icon:"&#128257;"}
 ];
 
 var TNAMES = {
@@ -2636,9 +3289,11 @@ function filterTopics(lv, btn) {
 function renderTopics() {
   renderTopicsList(S.level==="A2"||S.level==="B1"||S.level==="B2"||S.level==="C1" ? "A2" : "A1");
   // Update tab active state
-  var isA2 = S.level!=="A1";
-  document.getElementById("tab-a1").classList.toggle("active", !isA2);
-  document.getElementById("tab-a2").classList.toggle("active", isA2);
+  var lv = S.level||"A1";
+  ["a1","a2","b1","b2","c1"].forEach(function(l){
+    var el = document.getElementById("tab-"+l);
+    if(el) el.classList.toggle("active", l.toUpperCase()===lv);
+  });
 }
 
 function renderTopicsList(filterLv) {
