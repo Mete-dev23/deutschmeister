@@ -176,6 +176,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .slots-hint{font-size:11px;color:var(--text3);margin-bottom:13px}
 .hl-gold{color:var(--gold)}
 @media(max-width:768px){.sidebar{width:220px}.main{margin-left:220px;padding:18px;max-width:calc(100vw - 220px)}.opts-grid{grid-template-columns:1fr}.prog-overview{grid-template-columns:1fr 1fr}}
+
+.gen-btn{background:var(--sur2);border:1px solid var(--bor);color:var(--text2);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--fb);transition:all .15s}
+.gen-btn:hover{border-color:var(--blue);color:var(--text)}
+.gen-btn.active{background:var(--sur3);border-color:var(--gold);color:var(--gold);font-weight:500}
 </style>
 </head>
 <body>
@@ -330,64 +334,141 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
   </div>
   <div id="page-import" style="display:none">
     <div class="page-header">
-      <div>
-        <h2>Soru Paketi İçe Aktar</h2>
-        <p>AI'dan aldığın soru paketini yapıştır, sistem otomatik eklesin</p>
+      <div><h2>Soru Yönetimi</h2><p>AI ile soru üret veya hazır paketi içe aktar</p></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" style="margin-bottom:20px">
+      <button class="tab active" id="tab-generate" onclick="switchImportTab('generate',this)">🤖 AI Soru Üret</button>
+      <button class="tab" id="tab-import" onclick="switchImportTab('import',this)">📥 Paketi İçe Aktar</button>
+      <button class="tab" id="tab-manage" onclick="switchImportTab('manage',this)">📋 Soru Yönet</button>
+    </div>
+
+    <!-- TAB 1: AI SORU ÜRETİM PANELİ -->
+    <div id="import-tab-generate">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+
+        <!-- Seviye -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Seviye</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="gen-level-btns">
+            <button class="gen-btn active" data-val="A1" onclick="setGenOption('level',this)">A1</button>
+            <button class="gen-btn" data-val="A2" onclick="setGenOption('level',this)">A2</button>
+            <button class="gen-btn" data-val="B1" onclick="setGenOption('level',this)">B1</button>
+            <button class="gen-btn" data-val="B2" onclick="setGenOption('level',this)">B2</button>
+            <button class="gen-btn" data-val="C1" onclick="setGenOption('level',this)">C1</button>
+            <button class="gen-btn" data-val="C2" onclick="setGenOption('level',this)">C2</button>
+          </div>
+        </div>
+
+        <!-- Ana Kategori -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Ana Kategori</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="gen-cat-btns">
+            <button class="gen-btn active" data-val="Gramer" onclick="setGenOption('category',this)">Gramer</button>
+            <button class="gen-btn" data-val="Kelime" onclick="setGenOption('category',this)">Kelime</button>
+            <button class="gen-btn" data-val="Okuma" onclick="setGenOption('category',this)">Okuma</button>
+            <button class="gen-btn" data-val="Yazma" onclick="setGenOption('category',this)">Yazma</button>
+            <button class="gen-btn" data-val="Sinav" onclick="setGenOption('category',this)">Sınav Hazırlık</button>
+          </div>
+        </div>
+
+        <!-- Alt Kategori -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Alt Kategori</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="gen-subcat-btns"></div>
+        </div>
+
+        <!-- Soru Tipi -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Soru Tipi</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="gen-type-btns">
+            <button class="gen-btn active" data-val="mcq" onclick="setGenOption('qtype',this)">Çoktan Seçmeli</button>
+            <button class="gen-btn" data-val="fill" onclick="setGenOption('qtype',this)">Boşluk Doldurma</button>
+            <button class="gen-btn" data-val="mixed" onclick="setGenOption('qtype',this)">Karışık</button>
+            <button class="gen-btn" data-val="sentence" onclick="setGenOption('qtype',this)">Cümle Kurma</button>
+            <button class="gen-btn" data-val="writing" onclick="setGenOption('qtype',this)">Yazma</button>
+          </div>
+        </div>
+
+        <!-- Soru Sayısı + Zorluk -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Soru Sayısı</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="gen-btn" data-val="5" onclick="setGenOption('count',this)">5</button>
+            <button class="gen-btn active" data-val="10" onclick="setGenOption('count',this)">10</button>
+            <button class="gen-btn" data-val="15" onclick="setGenOption('count',this)">15</button>
+            <button class="gen-btn" data-val="20" onclick="setGenOption('count',this)">20</button>
+          </div>
+        </div>
+
+        <!-- Zorluk -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Zorluk</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="gen-btn" data-val="1" onclick="setGenOption('diff',this)">Kolay</button>
+            <button class="gen-btn active" data-val="mixed" onclick="setGenOption('diff',this)">Karışık</button>
+            <button class="gen-btn" data-val="2" onclick="setGenOption('diff',this)">Orta</button>
+            <button class="gen-btn" data-val="3" onclick="setGenOption('diff',this)">Zor</button>
+          </div>
+        </div>
+
+        <!-- Sınav Modu -->
+        <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px;grid-column:1/-1">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Sınav Modu</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="gen-btn active" data-val="none" onclick="setGenOption('exam',this)">Yok — Genel Pratik</button>
+            <button class="gen-btn" data-val="Goethe" onclick="setGenOption('exam',this)">Goethe Formatı</button>
+            <button class="gen-btn" data-val="TELC" onclick="setGenOption('exam',this)">TELC Formatı</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt Çıktısı -->
+      <div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="font-size:14px;color:var(--gold)">⚡ Oluşturulan Prompt</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn-p" style="font-size:12px;padding:7px 14px" onclick="generatePrompt()">Prompt Oluştur</button>
+            <button class="btn-s" style="font-size:12px;padding:7px 14px" id="copy-gen-btn" onclick="copyGenPrompt()">📋 Kopyala</button>
+          </div>
+        </div>
+        <div id="gen-prompt-output" style="background:var(--sur2);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;white-space:pre-wrap;min-height:80px;font-family:var(--fm)">
+          Seçimlerini yaptıktan sonra "Prompt Oluştur" butonuna bas.
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <a href="https://chat.openai.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#10a37f;color:white;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none">ChatGPT'de Aç →</a>
+          <a href="https://claude.ai" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:white;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none">Claude'da Aç →</a>
+        </div>
       </div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px;margin-bottom:16px">
-      <h3 style="font-size:14px;color:var(--gold);margin-bottom:10px">📋 Soru Paketi Formatı</h3>
-      <div style="background:var(--sur2);border-radius:8px;padding:12px;font-size:12px;color:var(--text2);font-family:var(--fm);line-height:1.8">
-        Claude veya ChatGPT'ye şunu söyle:<br>
-        <span style="color:var(--gold)">"DeutschMeister için 10 A1 Almanca soru üret. Format: JSON dizisi, her soru: {t, d, lv, tp, q, o, a, e} — t:'mcq' veya 'fill', d:1-3 zorluk, lv:'A1', tp:konu, q:soru metni, o:seçenekler dizisi (mcq için), a:doğru indeks (mcq için), c:cevap (fill için), e:açıklama"</span>
+    <!-- TAB 2: PAKETI İÇE AKTAR -->
+    <div id="import-tab-import" style="display:none">
+      <div style="background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px;margin-bottom:16px">
+        <h3 style="font-size:14px;color:var(--text);margin-bottom:12px">AI'dan gelen JSON soru paketini yapıştır:</h3>
+        <textarea id="import-textarea"
+          style="width:100%;min-height:200px;background:var(--sur2);border:2px solid var(--bor);color:var(--text);border-radius:10px;padding:12px;font-size:13px;font-family:var(--fm);resize:vertical;outline:none;transition:border-color .2s"
+          placeholder='[{"t":"mcq","d":1,"lv":"A1","tp":"verben","q":"Soru?","o":["A","B","C","D"],"a":0,"e":"Açıklama"}]'
+          onfocus="this.style.borderColor=&quot;var(--blue)&quot;"
+          onfocusout="this.style.borderColor=&quot;var(--bor)&quot;"></textarea>
+        <div id="import-feedback" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:13px"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn-p" onclick="importQuestions()">✅ Doğrula ve Ekle</button>
+          <button class="btn-s" onclick="clearImport()">🗑 Temizle</button>
+        </div>
       </div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px;margin-bottom:16px">
-      <h3 style="font-size:14px;color:var(--text);margin-bottom:12px">Soru paketini buraya yapıştır:</h3>
-      <textarea id="import-textarea" 
-        style="width:100%;min-height:200px;background:var(--sur2);border:2px solid var(--bor);color:var(--text);border-radius:10px;padding:12px;font-size:13px;font-family:var(--fm);resize:vertical;outline:none;transition:border-color .2s"
-        placeholder='[
-  {
-    "t": "mcq",
-    "d": 1,
-    "lv": "A1",
-    "tp": "verben",
-    "q": "Doğru çekim: Ich ___ Student.",
-    "o": ["bin", "bist", "ist", "sind"],
-    "a": 0,
-    "e": "ich bin — sein fiili 1. tekil"
-  },
-  {
-    "t": "fill",
-    "d": 2,
-    "lv": "A1",
-    "tp": "verben",
-    "q": "Boşluğu doldur: Er ___ Hunger.",
-    "c": "hat",
-    "e": "haben 3. tekil: er hat"
-  }
-]'
-        onfocus="this.style.borderColor='var(--blue)'"
-        onfocusout="this.style.borderColor='var(--bor)'"
-      ></textarea>
-
-      <div id="import-feedback" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:13px"></div>
-
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-        <button class="btn-p" onclick="importQuestions()">✅ Doğrula ve Ekle</button>
-        <button class="btn-s" onclick="clearImport()">🗑 Temizle</button>
-        <button class="btn-s" onclick="showImportedList()">📋 Eklenen Sorular</button>
+    <!-- TAB 3: SORU YÖNETİM -->
+    <div id="import-tab-manage" style="display:none">
+      <div style="background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h3 style="font-size:14px">Eklenen Özel Sorular (<span id="custom-q-count">0</span>)</h3>
+          <button class="btn-s" style="font-size:11px;color:var(--red);border-color:var(--red)" onclick="clearAllCustomQ()">Tümünü Sil</button>
+        </div>
+        <div id="imported-list-items"></div>
       </div>
-    </div>
-
-    <div id="imported-list" style="display:none;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <h3 style="font-size:14px">Eklenen Özel Sorular</h3>
-        <button class="btn-s" style="font-size:11px;color:var(--red);border-color:var(--red)" onclick="clearAllCustomQ()">Tümünü Sil</button>
-      </div>
-      <div id="imported-list-items"></div>
     </div>
   </div>
 </main>
@@ -2429,6 +2510,192 @@ function clearAllCustomQ() {
   fb.style.border = "1px solid var(--green)";
   fb.innerHTML = "✅ Tüm özel sorular silindi.";
 }
+
+// ── AI SORU ÜRETİM PANELİ ────────────────────────────────────────────────────
+var _genOptions = {
+  level: "A1",
+  category: "Gramer",
+  subcat: "",
+  qtype: "mcq",
+  count: "10",
+  diff: "mixed",
+  exam: "none"
+};
+
+var _subCategories = {
+  "Gramer": {
+    "A1": ["sein & haben","Fiil Çekimi","Artikel","Soru Kelimeleri","Olumsuzluk","Kelime Sırası V2","Modal Fiiller","Possessiv","Nominativ & Akkusativ","Çoğul Formlar","Edatlar","Emir Kipi"],
+    "A2": ["Perfekt","Prateritum","Kasus (Dativ/Akkusativ)","Trennbar Fiiller","Komparativ","Bağlaçlar (weil/dass)","Dönüşlü Fiiller","Adjektiv Deklination","Genitiv","Gelecek Zaman","Dolaylı Soru"],
+    "B1": ["Konjunktiv II","Passiv","Relativsätze","İnfinitif Yapıları","Temporalsätze","Partizipialkonstruktion"],
+    "B2": ["Erweitertes Passiv","Modal Partikeln","Nominalstil","Komplexe Präpositionen"],
+    "C1": ["Konjunktiv I","Stilistik","Partizipialkonstruktionen","Akademik Dil"],
+    "C2": ["İleri Stilistik","Nominalisierung","Komplexe Syntax","Literarische Texte"]
+  },
+  "Kelime": {
+    "A1": ["Aile","Renkler","Sayılar","Günler & Aylar","Meslekler","Ev & Mobilya","Yiyecek & İçecek","Vücut","Giysi","Ulaşım"],
+    "A2": ["Alışveriş","Sağlık","Okul","Boş Zaman","Doğa","Duygu & Düşünce","Seyahat","İş"],
+    "B1": ["Soyut Kavramlar","Deyimler","Bileşik Kelimeler","Kelime Türetme","Medya & Teknoloji"],
+    "B2": ["Akademik Kelime","Haber Dili","Politik Terimler","Ekonomi"],
+    "C1": ["İdiyomlar","Üslup Çeşitleme","Akademik Register"],
+    "C2": ["Edebi Dil","Arkaik İfadeler","İnce Anlam Farkları"]
+  },
+  "Okuma": {
+    "A1": ["Kısa İlanlar","SMS & E-posta","Tabelalar","Basit Diyalog"],
+    "A2": ["Haber Metni","E-posta","Program & Tarife","Kısa Makale"],
+    "B1": ["Gazete Haberi","Resmi Mektup","İş İlanı","Blog Yazısı"],
+    "B2": ["Akademik Metin","Basın Açıklaması","Yorum Yazısı"],
+    "C1": ["Bilimsel Makale","Edebi Metin","Felsefi Pasaj"],
+    "C2": ["Karmaşık Edebi Metin","Akademik Tez","Tarihsel Metin"]
+  },
+  "Yazma": {
+    "A1": ["Kendini Tanıtma","Kısa Mesaj","Basit Çeviri TR→DE"],
+    "A2": ["E-posta Yazma","Günlük Anlatımı","DE→TR Çeviri"],
+    "B1": ["Resmi Mektup","Kısa Essay","Karşılaştırma"],
+    "B2": ["Argümantatif Essay","Makale Özeti","Eleştiri Yazısı"],
+    "C1": ["Akademik Yazı","Tartışmalı Essay","Rapor"],
+    "C2": ["Bilimsel Makale","Edebi Analiz","Retorik Metin"]
+  },
+  "Sinav": {
+    "A1": ["Goethe A1 Muster","TELC A1 Okuma","TELC A1 Yazma","Start Deutsch 1"],
+    "A2": ["Goethe A2 Muster","TELC A2 Okuma","TELC A2 Yazma"],
+    "B1": ["Goethe B1 Muster","TELC B1 Okuma","TELC B1 Yazma","Zertifikat B1"],
+    "B2": ["Goethe B2 Muster","TELC B2 Okuma","DSH Hazırlık"],
+    "C1": ["Goethe C1 Muster","TestDaF Hazırlık","DSH C1"],
+    "C2": ["Goethe C2 Muster","Kleines Deutsches Sprachdiplom"]
+  }
+};
+
+function switchImportTab(tab, btn) {
+  ["generate","import","manage"].forEach(function(t) {
+    var el = document.getElementById("import-tab-"+t);
+    var b  = document.getElementById("tab-"+t);
+    if (el) el.style.display = t===tab ? "block" : "none";
+    if (b)  b.classList.toggle("active", t===tab);
+  });
+  if (tab === "manage") refreshManageTab();
+}
+
+function setGenOption(key, btn) {
+  // Deactivate siblings in same group
+  var parent = btn.parentElement;
+  parent.querySelectorAll(".gen-btn").forEach(function(b){ b.classList.remove("active"); });
+  btn.classList.add("active");
+  _genOptions[key] = btn.getAttribute("data-val");
+
+  // If category changed, update subcategory buttons
+  if (key === "category" || key === "level") updateSubcatButtons();
+}
+
+function updateSubcatButtons() {
+  var cat = _genOptions.category;
+  var lv  = _genOptions.level;
+  var subs = (_subCategories[cat] && _subCategories[cat][lv]) ? _subCategories[cat][lv] : [];
+  var container = document.getElementById("gen-subcat-btns");
+  if (!container) return;
+  container.innerHTML = subs.map(function(s, i) {
+    return "<button class='gen-btn" + (i===0?" active":"") + "' data-val='" + s + "' onclick='setGenSubcat(this)'>" + s + "</button>";
+  }).join("");
+  _genOptions.subcat = subs[0] || "";
+}
+
+function setGenSubcat(btn) {
+  document.getElementById("gen-subcat-btns").querySelectorAll(".gen-btn").forEach(function(b){ b.classList.remove("active"); });
+  btn.classList.add("active");
+  _genOptions.subcat = btn.getAttribute("data-val");
+}
+
+function generatePrompt() {
+  var o = _genOptions;
+  var diffText = o.diff==="1" ? "kolay (d:1)" : o.diff==="2" ? "orta (d:2)" : o.diff==="3" ? "zor (d:3)" : "karışık (d 1-3 karışık)";
+  var examNote = "";
+  if (o.exam !== "none") {
+    examNote = "\n\nSINAV MODU: " + o.exam + " formatına uygun sorular üret. " + o.exam + " sınav stilini yansıt (metinden soru, seçenek yapısı, dil seviyesi tam uyumlu olsun).";
+  }
+
+  var typeInstructions = "";
+  var formatNote = "";
+
+  if (o.qtype === "mcq") {
+    typeInstructions = "Tüm sorular çoktan seçmeli (t:\"mcq\") olsun. Her soru için 4 seçenek (o dizisi) ve doğru seçeneğin indeksi (a: 0-3) verilmeli.";
+    formatNote = '{"t":"mcq","d":2,"lv":"' + o.level + '","tp":"konu","q":"Soru metni?","o":["A","B","C","D"],"a":0,"e":"Açıklama"}';
+  } else if (o.qtype === "fill") {
+    typeInstructions = "Tüm sorular boşluk doldurma (t:\"fill\") olsun. Soru metninde ___ ile boşluk belirtilmeli, doğru cevap c alanında verilmeli.";
+    formatNote = '{"t":"fill","d":2,"lv":"' + o.level + '","tp":"konu","q":"Boşluk: Ich ___ Student.","c":"bin","e":"Açıklama"}';
+  } else if (o.qtype === "mixed") {
+    typeInstructions = "Karışık tip — yaklaşık %60 mcq, %40 fill olsun.";
+    formatNote = 'Hem mcq hem fill objeleri içeren dizi.';
+  } else if (o.qtype === "sentence") {
+    typeInstructions = "Cümle kurma soruları (t:\"sentence\") olsun. w dizisinde karışık kelimeler, c alanında doğru cümle verilmeli.";
+    formatNote = '{"t":"sentence","d":2,"lv":"' + o.level + '","tp":"konu","w":["Ich","gehe","heute","in","die","Schule","."],"c":"Ich gehe heute in die Schule.","tr":"Bugün okula gidiyorum."}';
+  } else if (o.qtype === "writing") {
+    typeInstructions = "Yazma alıştırması soruları (t:\"writing\") olsun. soru alanında Türkçe yönerge, tip alanında tr2de veya de2tr, cevap alanında beklenen Almanca/Türkçe cevap verilmeli.";
+    formatNote = '{"t":"writing","tip":"tr2de","lv":"' + o.level + '","soru":"Türkçeyi Almancaya çevir: ...","cevap":"Almanca cevap","h":"İpucu"}';
+  }
+
+  var prompt =
+    "Sen deneyimli bir Almanca dil eğitmenisin.\n\n" +
+    "Benim için aşağıdaki kriterlere göre " + o.count + " adet Almanca soru üret:\n\n" +
+    "• Seviye: " + o.level + "\n" +
+    "• Kategori: " + o.category + " — " + (o.subcat || "Genel") + "\n" +
+    "• Soru tipi: " + typeInstructions + "\n" +
+    "• Zorluk: " + diffText + "\n" +
+    examNote + "\n\n" +
+    "ÇIKTI FORMATI — Sadece geçerli bir JSON dizisi döndür, başka hiçbir şey yazma:\n\n" +
+    "[\n  " + formatNote + ",\n  ...\n]\n\n" +
+    "ZORUNLU KURALLAR:\n" +
+    "• Her soru objesinde mutlaka şu alanlar olsun: t, d (1-3), lv (\"" + o.level + "\"), tp (konu adı kısa İngilizce), q (soru metni), e (Türkçe açıklama)\n" +
+    "• tp alanı şu tarzda olsun: \"verben\", \"artikel\", \"perfekt\" vb. kısa slug\n" +
+    "• e alanı öğrenciye Türkçe açıklama — neden doğru, hangi kural\n" +
+    "• Sorular gerçekçi, günlük hayata yakın ve öğretici olsun\n" +
+    "• Açıklama alanları (e) mutlaka Türkçe olsun\n" +
+    "• JSON'dan önce veya sonra açıklama, yorum, markdown kod bloğu YAZMA — sadece [ ile başlayan JSON";
+
+  document.getElementById("gen-prompt-output").textContent = prompt;
+  window._genPrompt = prompt;
+}
+
+function copyGenPrompt() {
+  var text = window._genPrompt || document.getElementById("gen-prompt-output").textContent;
+  if (!text || text.includes("Seçimlerini yaptıktan")) { alert("Önce 'Prompt Oluştur' butonuna bas!"); return; }
+  var btn = document.getElementById("copy-gen-btn");
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      btn.textContent = "✅ Kopyalandı!";
+      btn.style.color = "var(--green)";
+      setTimeout(function(){ btn.textContent = "📋 Kopyala"; btn.style.color=""; }, 2000);
+    });
+  } else {
+    fallbackCopy(text);
+    btn.textContent = "✅ Kopyalandı!";
+    setTimeout(function(){ btn.textContent = "📋 Kopyala"; }, 2000);
+  }
+}
+
+function refreshManageTab() {
+  var items = document.getElementById("imported-list-items");
+  var count = document.getElementById("custom-q-count");
+  if (!items) return;
+  var cq = S.customQ || [];
+  if (count) count.textContent = cq.length;
+  if (cq.length === 0) {
+    items.innerHTML = "<p style='color:var(--text3);font-size:13px'>Henüz özel soru eklenmedi.</p>";
+    return;
+  }
+  items.innerHTML = cq.map(function(q, i) {
+    var tipColor = q.t==="mcq" ? "var(--blue2)" : q.t==="fill" ? "var(--green)" : "var(--gold)";
+    return "<div style='background:var(--sur2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--bor)'>"
+      + "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'>"
+      + "<span style='font-size:11px;font-family:var(--fm);color:"+tipColor+";background:var(--sur3);padding:2px 8px;border-radius:4px'>"+(q.t||"?").toUpperCase()+"</span>"
+      + "<span style='font-size:11px;color:var(--text3);font-family:var(--fm)'>"+(q.lv||"?")+" · "+(q.tp||"özel")+"</span>"
+      + "<button onclick='deleteCustomQ("+i+")' style='margin-left:auto;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1'>×</button>"
+      + "</div>"
+      + "<div style='font-size:13px;color:var(--text)'>"+(q.q||q.soru||"")+"</div>"
+      + "</div>";
+  }).join("");
+}
+
+// Init subcategories on page load
+document.addEventListener("DOMContentLoaded", function(){ updateSubcatButtons(); });
 
 window.addEventListener("load", function() {
   var saved = localStorage.getItem(SKEY);
