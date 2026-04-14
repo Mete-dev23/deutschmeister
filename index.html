@@ -327,6 +327,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
       <h3 style="font-size:15px;margin-bottom:14px">Zorluk Dagilimi</h3>
       <div id="sm-diff"></div>
     </div>
+  </div>
   <div id="page-import" style="display:none">
     <div class="page-header">
       <div>
@@ -573,7 +574,8 @@ function updateUI() {
 }
 function showPage(p, btn) {
   ["home","topics","vocab","progress","summary","topic-detail","import"].forEach(function(id){
-    document.getElementById("page-"+id).style.display = id===p?"block":"none";
+    var el = document.getElementById("page-"+id);
+    if (el) el.style.display = id===p?"block":"none";
   });
   document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active");});
   if (btn) btn.classList.add("active");
