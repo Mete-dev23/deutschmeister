@@ -3473,142 +3473,102 @@ function renderSummary() {
   }).join("");
 }
 function getAIAdvice() {
-  document.getElementById("advice-load").classList.add("show");
-  document.getElementById("sm-advice").style.display = "none";
   var stats = S.topicStats||{};
-  var weak = Object.keys(stats).filter(function(k){return stats[k].total>=2&&(stats[k].correct/stats[k].total)<0.7;})
-    .map(function(k){return (TNAMES[k]||k)+": "+Math.round((stats[k].correct/stats[k].total)*100)+"%";}).join(", ");
-  var strong = Object.keys(stats).filter(function(k){return stats[k].total>=2&&(stats[k].correct/stats[k].total)>=0.8;})
-    .map(function(k){return (TNAMES[k]||k)+": "+Math.round((stats[k].correct/stats[k].total)*100)+"%";}).join(", ");
-  fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",max_tokens:800,
-      system:"Sen deneyimli bir Almanca ogretmenisin. Ogrencinin istatistiklerine bakarak kisa, net ve motive edici Turkce tavsiye ver. Maksimum 5-6 cumle.\nPUANDURUM: (kisa ozet)\nODAKLAN: (en cok hangi konuya)\nONERI: (somut 1-2 adim)\nGUCLU YON: (motivasyon)",
-      messages:[{role:"user",content:"Ogrenci istatistikleri:\nGenel dogruluk: "+(S.total>0?Math.round((S.correct/S.total)*100):0)+"%\nToplam soru: "+S.total+"\nZayif konular: "+(weak||"Henuz yok")+"\nGuclu konular: "+(strong||"Henuz yok")+"\nSeviye: "+S.level+"\nXP: "+S.xp}]
-    })
-  }).then(function(r){return r.json();})
-    .then(function(data){
-      var txt = (data.content&&data.content[0])?data.content[0].text:"Tavsiye alinamadi.";
-      document.getElementById("advice-load").classList.remove("show");
-      document.getElementById("sm-advice").style.display = "block";
-      document.getElementById("sm-advice").textContent = txt;
-    })
-    .catch(function(){
-      document.getElementById("advice-load").classList.remove("show");
-      document.getElementById("sm-advice").style.display = "block";
-      document.getElementById("sm-advice").textContent = "Baglanti hatasi. Lutfen tekrar deneyin.";
-    });
+  var weak = Object.keys(stats)
+    .filter(function(k){return stats[k].total>=2&&(stats[k].correct/stats[k].total)<0.7;})
+    .map(function(k){return (TNAMES[k]||k)+": "+Math.round((stats[k].correct/stats[k].total)*100)+"%";})
+    .join(", ");
+  var strong = Object.keys(stats)
+    .filter(function(k){return stats[k].total>=2&&(stats[k].correct/stats[k].total)>=0.8;})
+    .map(function(k){return (TNAMES[k]||k)+": "+Math.round((stats[k].correct/stats[k].total)*100)+"%";})
+    .join(", ");
+
+  var acc = S.total>0 ? Math.round((S.correct/S.total)*100) : 0;
+
+  var prompt = "Ben bir Almanca öğrencisiyim ve senden kişisel öğrenme tavsiyesi almak istiyorum.\n\n"
+    + "=== ÖĞRENCİ İSTATİSTİKLERİ ===\n"
+    + "Seviye: " + S.level + "\n"
+    + "Genel doğruluk: %" + acc + "\n"
+    + "Toplam soru: " + S.total + "\n"
+    + "Toplam XP: " + S.xp + "\n"
+    + "Öğrenilen kelimeler: " + S.wordsLearned + "\n"
+    + "Gün serisi: " + S.streak + "\n"
+    + (weak  ? "Zayıf konular: " + weak  + "\n" : "")
+    + (strong? "Güçlü konular: " + strong + "\n" : "")
+    + "\n=== SENDEN İSTEDİKLERİM ===\n"
+    + "1. PUAN DURUMU: İstatistiklerimi kısaca değerlendir.\n"
+    + "2. ODAKLAN: Hangi konuya öncelik vermeliyim?\n"
+    + "3. GÜNLÜK PLAN: Benim için somut bir günlük çalışma planı öner.\n"
+    + "4. GÜÇLÜ YÖN: Motivasyonumu artıracak bir şey söyle.\n"
+    + "5. KAYNAK: Bu seviye için 1-2 somut kaynak veya strateji öner.\n"
+    + "\nLütfen Türkçe yanıt ver ve kısa, net, motive edici ol.";
+
+  // Show the prompt with copy button
+  var adviceDiv = document.getElementById("sm-advice");
+  var loadDiv = document.getElementById("advice-load");
+  loadDiv.classList.remove("show");
+  adviceDiv.style.display = "block";
+
+  adviceDiv.innerHTML =
+    "<div style='background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:16px;margin-bottom:12px'>"
+    + "<div style='font-size:12px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between'>"
+    + "<span>Aşağıdaki metni kopyalayıp <b style='color:var(--gold)'>ChatGPT</b>, <b style='color:var(--blue2)'>Claude</b> veya başka bir AI'ya yapıştır:</span>"
+    + "<button onclick='copyAdvicePrompt()' style='background:var(--gold);color:var(--bg);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fb)' id='copy-btn'>📋 Kopyala</button>"
+    + "</div>"
+    + "<div id='advice-prompt-text' style='font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-wrap;background:var(--sur3);border-radius:8px;padding:12px;max-height:220px;overflow-y:auto'>"
+    + escapeHtml(prompt)
+    + "</div>"
+    + "</div>"
+    + "<div style='display:flex;gap:10px;flex-wrap:wrap'>"
+    + "<a href='https://chat.openai.com' target='_blank' style='display:inline-flex;align-items:center;gap:6px;background:#10a37f;color:white;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none'>ChatGPT'de Aç →</a>"
+    + "<a href='https://claude.ai' target='_blank' style='display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:white;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;text-decoration:none'>Claude'da Aç →</a>"
+    + "<button onclick='copyAdvicePrompt()' style='background:var(--sur2);color:var(--text2);border:1px solid var(--bor);border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--fb)'>📋 Metni Kopyala</button>"
+    + "</div>";
+
+  window._advicePrompt = prompt;
 }
 
-// ============================================================
-// A1 SEV-YE SINAVI - TELC/Goethe format-nda
-// Toplam 100 puan, min ge-me: 80
-// B-l-mler: Okuma(30) + Bo-luk Doldurma(25) + -eviri(25) + Yazma(20)
-// ============================================================
+function copyAdvicePrompt() {
+  var text = window._advicePrompt || "";
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showCopied();
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
 
-var SINAV_BOLUMLER = [
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); showCopied(); } catch(e) {}
+  document.body.removeChild(ta);
+}
 
-  // -- B-L-M 1: OKUMA ANLAMA (30 puan, 6 soru - 5 puan) ----------------------
-  {bolum:"okuma", puan:5,
-   metin:"<i>Liebe Anna,<br>ich bin jetzt in Berlin! Die Stadt ist wunderschön und sehr groß. Ich wohne bei einer deutschen Familie in Charlottenburg. Sie sind sehr nett. Ich lerne jeden Tag Deutsch in einer Sprachschule. Der Kurs geht von 9 bis 13 Uhr. Nachmittags besuche ich die Stadt — gestern war ich im Museum und im Zoo. Das Wetter ist leider nicht so gut, es regnet oft. Aber ich bin sehr glücklich hier!<br>Liebe Grüße, Mia</i>",
-   soru:"Mia nerede yaşıyor?",
-   opts:["Bir otelde","Alman bir ailenin yanında","Arkadaşının evinde","Yurtta"],
-   ans:1, exp:"'Ich wohne bei einer deutschen Familie' = Alman bir ailenin yanında kalıyorum."},
+function showCopied() {
+  var btn = document.getElementById("copy-btn");
+  if (btn) {
+    var old = btn.textContent;
+    btn.textContent = "✅ Kopyalandı!";
+    btn.style.background = "var(--green)";
+    setTimeout(function() {
+      btn.textContent = old;
+      btn.style.background = "var(--gold)";
+    }, 2000);
+  }
+}
 
-  {bolum:"okuma", puan:5,
-   metin:null,
-   soru:"Mia'nın dil kursu saat kaçta bitiyor?",
-   opts:["9:00","12:00","13:00","14:00"],
-   ans:2, exp:"'Der Kurs geht von 9 bis 13 Uhr' = Kurs 9'dan 13'e kadar."},
-
-  {bolum:"okuma", puan:5,
-   metin:null,
-   soru:"Mia dün nereye gitti?",
-   opts:["Sinemaya ve parka","Müzeye ve hayvanat bahçesine","Alışverişe","Okula"],
-   ans:1, exp:"'gestern war ich im Museum und im Zoo' = Dün müzede ve hayvanat bahçesindeydim."},
-
-  {bolum:"okuma", puan:5,
-   metin:"<i>STADTFEST BERLIN<br>Samstag, 15. Juni — 12:00 bis 22:00 Uhr<br>Ort: Alexanderplatz<br>Programm: Musik, Tanz, Essen aus aller Welt<br>Eintritt: KOSTENLOS!<br>Bei Regen findet das Fest in der Sporthalle statt.<br>Infos: www.stadtfest-berlin.de</i>",
-   soru:"Şehir festivali ne zaman başlıyor?",
-   opts:["Saat 10:00","Saat 12:00","Saat 15:00","Saat 22:00"],
-   ans:1, exp:"'12:00 bis 22:00 Uhr' — festival öğlen 12'de başlıyor."},
-
-  {bolum:"okuma", puan:5,
-   metin:null,
-   soru:"Yağmur yağarsa festival nerede yapılır?",
-   opts:["İptal edilir","Başka güne ertelenir","Spor salonunda","Kapalı çarşıda"],
-   ans:2, exp:"'Bei Regen findet das Fest in der Sporthalle statt.' = Yağmurda festival spor salonunda yapılır."},
-
-  {bolum:"okuma", puan:5,
-   metin:"<i>STELLENANGEBOT<br>Wir suchen: Verkäufer/in (Teilzeit, 20 Std/Woche)<br>Arbeitszeit: Montag–Freitag, 14:00–18:00 Uhr<br>Anforderungen: Gute Deutschkenntnisse, freundlich, pünktlich<br>Wir bieten: 12 Euro/Stunde, nette Kollegen, gute Lage<br>Bewerbung: jobs@bäckerei-schmidt.de</i>",
-   soru:"Bu iş için saatte ne kadar ücret ödeniyor?",
-   opts:["10 Euro","11 Euro","12 Euro","14 Euro"],
-   ans:2, exp:"'12 Euro/Stunde' = Saatte 12 Euro ödeniyor."},
-
-  // -- B-L-M 2: BO-LUK DOLDURMA (25 puan, 5 soru - 5 puan) -------------------
-  {bolum:"bosuk", puan:5,
-   soru:"Ich ___ seit zwei Jahren in Hamburg und ___ dort als Ingenieur.",
-   cevap1:"wohne", cevap2:"arbeite",
-   exp:"wohnen 1. tekil: ich wohne — arbeiten 1. tekil: ich arbeite"},
-
-  {bolum:"bosuk", puan:5,
-   soru:"Am Montag ___ wir einen Ausflug nach Dresden ___. Der Bus ___ um 8 Uhr ab.",
-   cevap1:"machen", cevap2:"fährt",
-   exp:"machen 1. cogul: wir machen — abfahren trennbar 3. tekil: fährt...ab"},
-
-  {bolum:"bosuk", puan:5,
-   soru:"Gestern ___ ich sehr müde, weil ich bis Mitternacht ___ habe.",
-   cevap1:"war", cevap2:"gearbeitet",
-   exp:"sein Prateritum: war — arbeiten Partizip II: gearbeitet (haben+PP)"},
-
-  {bolum:"bosuk", puan:5,
-   soru:"Meine Schwester ___ seit drei Jahren Medizin. Sie ___ Ärztin werden.",
-   cevap1:"studiert", cevap2:"möchte",
-   exp:"studieren 3. tekil: studiert — möchten 3. tekil: möchte + Infinitiv"},
-
-  {bolum:"bosuk", puan:5,
-   soru:"Ich ___ kein Auto, deshalb ___ ich immer mit dem Bus zur Arbeit.",
-   cevap1:"habe", cevap2:"fahre",
-   exp:"haben 1. tekil: habe — fahren 1. tekil: fahre"},
-
-  // -- B-L-M 3: -EV-R- (25 puan, 5 soru - 5 puan) ----------------------------
-  {bolum:"ceviri_tr2de", puan:5,
-   soru:"Eczane nerede? Biraz baş ağrım var.",
-   cevap:"Wo ist die Apotheke? Ich habe ein bisschen Kopfschmerzen.",
-   exp:"Wo ist die Apotheke? — Ich habe Kopfschmerzen (ein bisschen = biraz)"},
-
-  {bolum:"ceviri_tr2de", puan:5,
-   soru:"Almanya'da iki yıldır çalışıyorum ve Almancamı geliştirmek istiyorum.",
-   cevap:"Ich arbeite seit zwei Jahren in Deutschland und möchte mein Deutsch verbessern.",
-   exp:"seit zwei Jahren = iki yıldır — möchten + Infinitiv — verbessern = geliştirmek"},
-
-  {bolum:"ceviri_de2tr", puan:5,
-   soru:"Entschuldigung, können Sie mir sagen, wann der nächste Zug nach München fährt?",
-   cevap:"Affedersiniz, bana bir sonraki Münih treninin ne zaman kalktığını söyleyebilir misiniz?",
-   exp:"können Sie = yapabilir misiniz — wann = ne zaman — nächste = bir sonraki"},
-
-  {bolum:"ceviri_de2tr", puan:5,
-   soru:"Ich habe meine Hausaufgaben noch nicht gemacht, weil ich krank war.",
-   cevap:"Hasta olduğum için ev ödevlerimi henüz yapmadım.",
-   exp:"noch nicht = henüz değil — weil = çünkü/için — krank war = hastaydım"},
-
-  {bolum:"ceviri_tr2de", puan:5,
-   soru:"Geçen hafta sonu arkadaşlarımla birlikte bir piknik yaptık, hava çok güzeldi.",
-   cevap:"Letztes Wochenende haben wir zusammen mit meinen Freunden ein Picknick gemacht, das Wetter war sehr schön.",
-   exp:"letztes Wochenende — zusammen mit — haben gemacht (Perfekt) — war (Prateritum)"},
-
-  // -- B-L-M 4: YAZMA (20 puan, 2 g-rev - 10 puan) ---------------------------
-  {bolum:"yazma", puan:10,
-   soru:"Görev 1 — Kısa mesaj yaz (50-70 kelime):<br><br>Alman arkadaşın Lisa sana mesaj attı: 'Hallo! Wie geht es dir? Ich möchte dich am Samstag besuchen. Hast du Zeit?'<br><br>Cevap yaz: Durumunu anlat, Cumartesi müsait olup olmadığını söyle, buluşma yeri öner.",
-   exp:"Grüße + Ich bin... + Am Samstag... + Wir können uns... treffen"},
-
-  {bolum:"yazma", puan:10,
-   soru:"Görev 2 — Kısa tanıtım yaz (60-80 kelime):<br><br>Bir dil kursuna kaydolmak istiyorsun. Okula kendinle ilgili kısa bir e-posta yaz:<br>• Adın, yaşın, milliyet<br>• Mesleğin / ne okuduğun<br>• Neden Almanca öğrenmek istiyorsun<br>• Almanca seviyeni belirt",
-   exp:"Ich heiße... / Ich bin ... Jahre alt / Ich komme aus... / Ich arbeite als... / Ich lerne Deutsch weil... / Mein Niveau ist A1."}
-];
-
-// -- SINAV ENGINE -------------------------------------------------------------
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
 
 function startQuiz(lv) {
   lv = lv || S.level || "A1";
