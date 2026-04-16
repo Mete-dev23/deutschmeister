@@ -730,8 +730,14 @@ function getQs() {
     var aqList = lv==="C1" ? AQ_C1 : lv==="B2" ? AQ_B2 : lv==="B1" ? AQ_B1 : AQ;
     if (!aqList || !aqList.length) aqList = AQ;
     return aqList.map(function(a,i){
-      if (i%2===0) return {t:"mcq",d:1,lv:lv,tp:"artikel",q:"Artikeli seç: <b style='color:var(--gold);font-size:20px'>"+a.word+"</b><br><span style='font-size:13px;color:var(--text2)'>"+a.tr+"</span>",o:["der","die","das"],a:["der","die","das"].indexOf(a.art),e:"<b>"+a.art+"</b> — "+a.ex.split("\n")[0]};
-      return {t:"fill",d:2,lv:lv,tp:"artikel",q:"Artikeli yaz: <b style='color:var(--gold);font-size:20px'>"+a.word+"</b><br><span style='font-size:13px;color:var(--text2)'>"+a.tr+"</span>",c:a.art,e:"<b>"+a.art+"</b> — "+a.ex.split("\n")[0]};
+      var bare = a.word.replace(/^(der|die|das)\s+/i, "");
+      var qStyle = "<b style=\'color:var(--gold);font-size:20px\'>";
+      var tStyle = "</b><br><span style=\'font-size:13px;color:var(--text2)\'>";
+      var qMcq = "Artikeli sec: " + qStyle + bare + tStyle + a.tr + "</span>";
+      var qFill = "Artikeli yaz: " + qStyle + bare + tStyle + a.tr + "</span>";
+      var expl = "<b>" + a.art + "</b> " + bare + " — " + a.ex.split("\\n")[0];
+      if (i%2===0) return {t:"mcq",d:1,lv:lv,tp:"artikel",q:qMcq,o:["der","die","das"],a:["der","die","das"].indexOf(a.art),e:expl};
+      return {t:"fill",d:2,lv:lv,tp:"artikel",q:qFill,c:a.art,e:expl};
     });
   }
   return [];
@@ -1988,14 +1994,16 @@ function startQuiz(lv) {
   lv = lv || S.level || "A1";
   curEx = "quiz";
   checkStreak();
-  
-  // Seviyeye g-re s-nav sorular- se-
+
   var sorular;
-  if (lv==="B1") sorular = getSinavB1();
-  else if (lv==="B2") sorular = getSinavB2();
-  else if (lv==="C1") sorular = getSinavC1();
-  else sorular = JSON.parse(JSON.stringify(SINAV_BOLUMLER)); // A1/A2
-  
+  if (lv === "B1") sorular = getSinavB1();
+  else if (lv === "B2") sorular = getSinavB2();
+  else if (lv === "C1") sorular = getSinavC1();
+  else sorular = getSinavA1A2(lv); // A1/A2: GQ'dan uret
+
+  // Sadece desteklenen tipler: bolum, soru, opts/cevap1+cevap2, ans/puan
+  // (getSinavB1/B2/C1 zaten bu formatta, getSinavA1A2 de bu formatta uretecek)
+
   window._sinav = {
     sorular: sorular,
     idx: 0,
@@ -2009,6 +2017,33 @@ function startQuiz(lv) {
   document.getElementById("ex-panel").style.display = "block";
   renderSinavIntro();
 }
+
+function getSinavA1A2(lv) {
+  // GQ'dan mcq ve fill tipindeki soruları al, sinav formatına cevir
+  var lvlOrder = {A1:1, A2:2, B1:3, B2:4, C1:5};
+  var ul = lvlOrder[lv] || 1;
+  var pool = (typeof GQ !== "undefined" ? GQ : [])
+    .filter(function(q) { return (lvlOrder[q.lv]||1) <= ul && (q.t==="mcq"||q.t==="fill"); })
+    .sort(function() { return Math.random() - 0.5; });
+
+  var result = [];
+  // Okuma bolumu: 6 mcq soru
+  pool.filter(function(q){return q.t==="mcq";}).slice(0,6).forEach(function(q){
+    result.push({
+      bolum: "okuma", puan: 5, metin: null,
+      soru: q.q, opts: q.o, ans: q.a, exp: q.e||""
+    });
+  });
+  // Bosluk bolumu: 5 fill soru (bosuk formatina cevir)
+  pool.filter(function(q){return q.t==="fill";}).slice(0,5).forEach(function(q){
+    result.push({
+      bolum: "bosuk", puan: 4,
+      soru: q.q, cevap1: q.c, cevap2: "", exp: q.e||""
+    });
+  });
+  return result;
+}
+
 
 function getSinavB1() {
   return [
@@ -2465,17 +2500,54 @@ function importQuestions() {
 
 function validateQuestion(q, i) {
   var prefix = (i+1) + ". soru: ";
-  if (!q || typeof q !== "object") return prefix + "geçersiz obje";
-  if (!q.q || typeof q.q !== "string") return prefix + "'q' (soru metni) eksik";
+  if (!q || typeof q !== "object") return prefix + "gecersiz obje";
+
+  // q (soru metni) — zorunlu
+  if (!q.q && !q.question && !q.soru) return prefix + "'q' (soru metni) eksik";
+  if (!q.q) q.q = q.question || q.soru;
+
+  // t (tip) — zorunlu, aliaslar kabul
+  if (!q.t && q.type) q.t = q.type;
   if (!q.t) return prefix + "'t' (tip: mcq/fill) eksik";
-  if (q.t === "mcq") {
-    if (!Array.isArray(q.o) || q.o.length < 2) return prefix + "mcq için 'o' (seçenekler) gerekli";
-    if (typeof q.a !== "number") return prefix + "mcq için 'a' (doğru indeks) gerekli";
+  q.t = q.t.toLowerCase().trim();
+
+  if (q.t === "mcq" || q.t === "multiplechoice" || q.t === "multiple_choice") {
+    q.t = "mcq";
+    // o (secenekler) — zorunlu
+    if (!q.o && q.options) q.o = q.options;
+    if (!q.o && q.choices) q.o = q.choices;
+    if (!Array.isArray(q.o) || q.o.length < 2) return prefix + "mcq icin secenekler (o/options) gerekli";
+
+    // a (dogru indeks) — toleranli: number, string, veya metin
+    if (q.a === undefined || q.a === null) {
+      // correct veya answer alani dene
+      if (q.correct !== undefined) q.a = q.correct;
+      else if (q.answer !== undefined) q.a = q.answer;
+    }
+    // String "2" → number 2
+    if (typeof q.a === "string" && !isNaN(q.a)) q.a = parseInt(q.a, 10);
+    // Metin cevap → indeks bul: "Berlin" → 2
+    if (typeof q.a === "string") {
+      var foundIdx = -1;
+      q.o.forEach(function(opt, idx) {
+        if (opt.toString().toLowerCase().trim() === q.a.toLowerCase().trim()) foundIdx = idx;
+      });
+      if (foundIdx >= 0) q.a = foundIdx;
+      else return prefix + "mcq cevabi (a) secenekler icinde bulunamadi: '" + q.a + "'";
+    }
+    if (typeof q.a !== "number" || q.a < 0 || q.a >= q.o.length) {
+      return prefix + "mcq icin gecerli 'a' (0-" + (q.o.length-1) + ") gerekli, gelen: " + JSON.stringify(q.a);
+    }
   }
+
   if (q.t === "fill") {
-    if (!q.c) return prefix + "fill için 'c' (cevap) gerekli";
+    if (!q.c && q.answer) q.c = q.answer;
+    if (!q.c && q.correct) q.c = q.correct;
+    if (!q.c) return prefix + "fill icin 'c' (cevap) eksik";
+    q.c = String(q.c).trim();
   }
-  return null; // geçerli
+
+  return null; // gecerli
 }
 
 function clearImport() {
