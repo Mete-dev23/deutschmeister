@@ -6,7 +6,8 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- DeutschMeister v4.0.1 — 14.04.2026 12:59<title>DeutschMeister v4.0.1 — 14.04.2026 12:59</title>
+<!-- DeutschMeister v4.0.3 | 15.04.2026 05:50 -->
+<title>DeutschMeister v4.0.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f14;--sur:#151820;--sur2:#1c2030;--sur3:#232840;--bor:#2a3050;--gold:#e8b84b;--blue:#4a7cdc;--blue2:#6b9bff;--green:#3dba7e;--red:#e05c5c;--text:#e8ecf5;--text2:#8e99b8;--text3:#5a6480;--fd:'Playfair Display',serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace}
@@ -235,7 +236,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
       <div><h2>Merhaba! <span class="hl-gold">Bugun ne ogreniyoruz?</span></h2><p>Seviye: <strong id="lvl-display">A1 -- Baslangic</strong></p></div>
       <span class="hbadge" id="today-badge">Bugun: 0/5 alistirma</span>
     </div>
-    <div class="ex-panel" id="ex-panel"><div id="ex-content"></div></div>
+    <div class="ex-panel" id="ex-panel" style="display:none"><div id="ex-content"></div></div>
     <div id="home-cards">
       <div class="cards-grid">
         <div class="ex-card" style="--ca:#e8b84b"><h3>&#128214; Gramer Alistirmasi</h3><p>Fiil cekimleri, soru kelimeleri, cumle yapisi. Kolay/orta/zor sorular.</p><div class="card-footer"><span class="tag" id="gram-tag">A1 Gramer</span><button class="start-btn" onclick="startEx('grammar')">Basla</button></div></div>
@@ -653,17 +654,33 @@ function updateUI() {
   document.getElementById("srs-tag").textContent = "SRS . "+due+" kelime";
 }
 function showPage(p, btn) {
-  ["home","topics","vocab","progress","summary","topic-detail","import"].forEach(function(id){
-    var el = document.getElementById("page-"+id);
-    if (el) el.style.display = id===p?"block":"none";
+  // Show/hide pages — null-safe
+  ["home", "topics", "vocab", "progress", "summary", "topic-detail", "import"].forEach(function(id) {
+    var el = document.getElementById("page-" + id);
+    if (el) el.style.display = (id === p) ? "block" : "none";
   });
-  document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active");});
+
+  // Nav button active state
+  document.querySelectorAll(".nav-btn").forEach(function(b) {
+    b.classList.remove("active");
+  });
   if (btn) btn.classList.add("active");
-  if (p==="topics") renderTopics();
-  if (p==="vocab") { loadFC(); renderVocabList(); }
-  if (p==="progress") renderProgress();
-  if (p==="summary") renderSummary();
+
+  // Import tab: initialize after DOM settles
+  if (p === "import") {
+    setTimeout(function() {
+      var tabEl = document.getElementById("tab-generate");
+      if (tabEl) switchImportTab("generate", null);
+    }, 100);
+  }
+
+  // Page-specific renders
+  if (p === "topics")   renderTopics();
+  if (p === "vocab")    { loadFC(); renderVocabList(); }
+  if (p === "progress") renderProgress();
+  if (p === "summary")  renderSummary();
 }
+
 function setLevel(btn, lvl) {
   S.level = lvl;
   document.querySelectorAll(".level-btn").forEach(function(b){b.classList.remove("active");});
@@ -2565,18 +2582,22 @@ var _subCategories = {
 };
 
 function switchImportTab(tab, btn) {
-  ["generate","import","manage"].forEach(function(t) {
-    var el = document.getElementById("import-tab-"+t);
-    var b  = document.getElementById("tab-"+t);
-    if (el) el.style.display = t===tab ? "block" : "none";
-    if (b)  b.classList.toggle("active", t===tab);
+  ["generate", "import", "manage"].forEach(function(t) {
+    var el = document.getElementById("import-tab-" + t);
+    var b  = document.getElementById("tab-" + t);
+    if (el) el.style.display = (t === tab) ? "block" : "none";
+    if (b) {
+      b.classList.remove("active");
+      if (t === tab) b.classList.add("active");
+    }
   });
-  if (tab === "manage") refreshManageTab();
+  if (tab === "manage")   { refreshManageTab(); }
+  if (tab === "generate") { setTimeout(updateSubcatButtons, 50); }
 }
 
 function setGenOption(key, btn) {
-  // Deactivate siblings in same group
   var parent = btn.parentElement;
+  if (!parent) return;
   parent.querySelectorAll(".gen-btn").forEach(function(b){ b.classList.remove("active"); });
   btn.classList.add("active");
   _genOptions[key] = btn.getAttribute("data-val");
@@ -2694,7 +2715,7 @@ function refreshManageTab() {
 }
 
 // Init subcategories on page load
-document.addEventListener("DOMContentLoaded", function(){ updateSubcatButtons(); });
+// subcategory buttons initialized when import tab is opened
 
 window.addEventListener("load", function() {
   var saved = localStorage.getItem(SKEY);
@@ -2747,6 +2768,15 @@ window.addEventListener("load", function() {
 
   if (!S.vocab) S.vocab = (typeof VOCAB !== 'undefined') ? JSON.parse(JSON.stringify(VOCAB)) : [];
   updateUI(); loadFC();
+  // Kesin olarak ana sayfayı göster
+  setTimeout(function() {
+    showPage("home", null);
+    document.querySelectorAll(".nav-btn").forEach(function(b) {
+      if (b.getAttribute("onclick") && b.getAttribute("onclick").indexOf("'home'") !== -1) {
+        b.classList.add("active");
+      }
+    });
+  }, 150);
 });
 
 </script>
