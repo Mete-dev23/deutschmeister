@@ -857,15 +857,16 @@ function renderQ() {
     +'<button class="ex-close" onclick="closeEx()">Kapat</button></div></div>'
     +'<div class="ex-prog"><div class="ex-pbar"><div class="ex-pfill" style="width:'+(total>0?(qIdx/total)*100:0)+'%"></div></div>'
     +'<span class="ex-ptxt">'+(qIdx+1)+" / "+total+'</span></div>'
-    +'<div class="q-area"><div class="q-label">Soru '+(qIdx+1)+'</div>'
+    +'<div class="q-area"><div class="q-label" style="color:'+(q.t==="tr_de"?"var(--blue2)":"var(--text3)")+'">'+(q.t==="tr_de"?"Almancaya Cevir":"Soru '+(qIdx+1)+'")+'</div>'
     +'<div class="q-text" style="'+(q.t==="telc"?"font-size:14px;line-height:1.7":"")+'">'+qText+'</div></div>'
-    +(q.t==="fill" ? '<div class="fill-area"><input id="finput" class="fill-input" type="text" placeholder="Cevabin..." autocomplete="off" spellcheck="false"><button class="btn-p" onclick="checkFill('+qIdx+')">Kontrol</button></div>'
+    +(q.t==="fill"||q.t==="tr_de" ? '<div class="fill-area"><input id="finput" class="fill-input" type="text" placeholder="'+(q.t==="tr_de"?"Almanca yaz...":"Cevabin...")+'" autocomplete="off" spellcheck="false"><button class="btn-p" onclick="'+(q.t==="tr_de"?"checkTrDe":'checkFill')+'('+qIdx+')">Kontrol</button></div>'
       : '<div class="opts-grid" id="opts"></div>')
     +'<div class="fb-box" id="fb"></div>'
     +'<div class="act-row" id="arow" style="display:none"><button class="btn-p" onclick="nextQ()">Sonraki</button></div>';
-  if (q.t==="fill") {
+  if (q.t==="fill"||q.t==="tr_de") {
     var fi = document.getElementById("finput");
-    fi.addEventListener("keydown", function(e){ if(e.key==="Enter") checkFill(qIdx); });
+    var checkFn = q.t==="tr_de" ? function(){ checkTrDe(qIdx); } : function(){ checkFill(qIdx); };
+    fi.addEventListener("keydown", function(e){ if(e.key==="Enter") checkFn(); });
     fi.focus();
   } else {
     var od = document.getElementById("opts");
@@ -874,6 +875,49 @@ function renderQ() {
     });
   }
 }
+function checkTrDe(qi) {
+  var fi = document.getElementById("finput");
+  if (!fi) return;
+  var qs = window._qs || [];
+  var q  = qs[qi];
+  if (!q) return;
+
+  var user    = fi.value.trim();
+  var correct = (q.c || q.a_text || "").trim();
+
+  // Toleranslı karşılaştırma: küçük/büyük harf + normalizeDE
+  var userN    = normalizeDE(user);
+  var correctN = normalizeDE(correct);
+  var ok = userN === correctN;
+
+  // Alternatif cevaplar (a_alt dizisi varsa)
+  if (!ok && Array.isArray(q.a_alt)) {
+    ok = q.a_alt.some(function(alt) {
+      return normalizeDE(alt.trim()) === userN;
+    });
+  }
+
+  fi.disabled = true;
+  fi.className = "fill-input " + (ok ? "ok" : "err");
+  fi.nextElementSibling.disabled = true;
+
+  if (ok) { sesScore++; S.xp += 14; S.correct++; }
+  else     { addRetry(qi); }
+  S.total++; sesTotal++;
+  if (q) trackStats(q, ok);
+
+  var fb = document.getElementById("fb");
+  fb.className = "fb-box show " + (ok ? "ok-fb" : "err-fb");
+  fb.innerHTML = '<div class="fb-head">' + (ok
+    ? "Dogru!"
+    : "Yanlis! Dogru: <b>" + correct + "</b>")
+    + '</div><div class="fb-body">' + (q.e || "") + '</div>';
+
+  document.getElementById("arow").style.display = "flex";
+  updateUI();
+  accessToken ? saveDrive() : save();
+}
+
 function checkMCQ(chosen, correct, qi) {
   var qs = window._qs||[];
   var q = qs[qi];
