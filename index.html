@@ -2462,21 +2462,40 @@ function showSinavSonuc() {
 
 // ── SORU İÇE AKTARMA SİSTEMİ ─────────────────────────────────────────────────
 function importQuestions() {
-  var raw = document.getElementById("import-textarea").value.trim();
-  var fb = document.getElementById("import-feedback");
+  var raw = document.getElementById("import-textarea").value;
+  var fb  = document.getElementById("import-feedback");
   fb.style.display = "block";
 
-  if (!raw) {
+  if (!raw || !raw.trim()) {
     fb.style.background = "rgba(224,92,92,.1)";
     fb.style.border = "1px solid var(--red)";
-    fb.innerHTML = "❌ Boş alan. Önce soru paketini yapıştır.";
+    fb.innerHTML = "Bos alan. Once soru paketini yapistir.";
     return;
   }
 
-  // JSON parse dene — hem dizi hem de {"questions":[...]} formatı destekle
+  // Adim 1: markdown kod blogu temizle  ```json ... ``` veya ``` ... ```
+  var cleaned = raw.trim();
+  cleaned = cleaned.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "").trim();
+
+  // Adim 2: JSON dizisini bul — [ ile baslamiyorsa icinde ara
+  if (cleaned.charAt(0) !== "[") {
+    var arrStart = cleaned.indexOf("[");
+    var arrEnd   = cleaned.lastIndexOf("]");
+    if (arrStart !== -1 && arrEnd > arrStart) {
+      cleaned = cleaned.slice(arrStart, arrEnd + 1);
+    } else {
+      fb.style.background = "rgba(224,92,92,.1)";
+      fb.style.border = "1px solid var(--red)";
+      fb.innerHTML = "Format hatasi: Sadece [ ile baslayan ve ] ile biten saf JSON yapistir."
+        + "<br><small>AI ciktisinin basinda/sonunda aciklama varsa sil, sadece [...] kismini yapistir.</small>";
+      return;
+    }
+  }
+
+  // Adim 3: parse et
   var questions;
   try {
-    var parsed = JSON.parse(raw);
+    var parsed = JSON.parse(cleaned);
     if (Array.isArray(parsed)) {
       questions = parsed;
     } else if (parsed.questions && Array.isArray(parsed.questions)) {
@@ -2487,59 +2506,44 @@ function importQuestions() {
   } catch(e) {
     fb.style.background = "rgba(224,92,92,.1)";
     fb.style.border = "1px solid var(--red)";
-    fb.innerHTML = "❌ JSON formatı hatalı: " + e.message
-      + "<br><small>Yapıştırdığın metnin [ ile başlayıp ] ile bittiğinden emin ol.</small>";
+    fb.innerHTML = "JSON parse hatasi: " + e.message
+      + "<br><small>Sadece [ ile baslayan ve ] ile biten saf JSON yapistir.</small>";
     return;
   }
 
-  // Her soruyu doğrula
+  // Adim 4: dogrula ve ekle
   var valid = [], errors = [];
   questions.forEach(function(q, i) {
     var err = validateQuestion(q, i);
-    if (err) {
-      errors.push(err);
-    } else {
-      q._custom = true; // özel soru işareti
-      valid.push(q);
-    }
+    if (err) { errors.push(err); }
+    else      { q._custom = true; valid.push(q); }
   });
 
   if (valid.length === 0) {
     fb.style.background = "rgba(224,92,92,.1)";
     fb.style.border = "1px solid var(--red)";
-    fb.innerHTML = "❌ Geçerli soru bulunamadı.<br>" + errors.slice(0,3).join("<br>");
+    fb.innerHTML = "Gecerli soru bulunamadi."
+      + "<br>" + errors.slice(0, 3).join("<br>")
+      + (errors.length > 3 ? "<br>... ve " + (errors.length-3) + " hata daha." : "");
     return;
   }
 
-  // Mevcut customQ ile birleştir — aynı soruyu iki kez ekleme
   if (!S.customQ) S.customQ = [];
   var added = 0;
   valid.forEach(function(q) {
-    var duplicate = S.customQ.some(function(existing) {
-      return existing.q === q.q;
-    });
-    if (!duplicate) {
-      S.customQ.push(q);
-      added++;
-    }
+    var dup = S.customQ.some(function(ex) { return ex.q === q.q; });
+    if (!dup) { S.customQ.push(q); added++; }
   });
 
-  // Drive'a kaydet
   accessToken ? saveDrive() : save();
-
-  var warnText = errors.length > 0
-    ? "<br><small style='color:var(--gold)'>⚠ " + errors.length + " soru atlandı (format hatası)</small>"
-    : "";
 
   fb.style.background = "rgba(61,186,126,.1)";
   fb.style.border = "1px solid var(--green)";
-  fb.innerHTML = "✅ <b>" + added + " soru eklendi!</b> Toplam özel soru: " + S.customQ.length
-    + warnText
-    + "<br><small>Bu sorular artık Gramer alıştırmasında ve Drive'da senkronize.</small>";
+  fb.innerHTML = added + " soru eklendi. Toplam ozel soru: " + S.customQ.length
+    + (errors.length > 0 ? " &nbsp;|&nbsp; " + errors.length + " soru atlandi (format hatasi)" : "")
+    + "<br><small>Gramer alistirmasinda ve Drive'da senkronize.</small>";
 
-  if (added > 0) {
-    document.getElementById("import-textarea").value = "";
-  }
+  if (added > 0) document.getElementById("import-textarea").value = "";
 }
 
 function validateQuestion(q, i) {
@@ -2768,23 +2772,37 @@ function generatePrompt() {
     formatNote = '{"t":"writing","tip":"tr2de","lv":"' + o.level + '","soru":"Türkçeyi Almancaya çevir: ...","cevap":"Almanca cevap","h":"İpucu"}';
   }
 
+  // Example JSON: 2 real objects, no "..." 
+  var exMcq  = '  {"t":"mcq","d":1,"lv":"' + o.level + '","tp":"verben","q":"Beispielfrage?","o":["A","B","C","D"],"a":0,"e":"Aciklama"}';
+  var exFill = '  {"t":"fill","d":2,"lv":"' + o.level + '","tp":"artikel","q":"Das ___ ein Buch.","c":"ist","e":"sein fiili"}';
+  var exOut  = (o.qtype === "fill") ? exFill : (o.qtype === "mcq") ? exMcq : exMcq + ",\n" + exFill;
+
   var prompt =
-    "Sen deneyimli bir Almanca dil eğitmenisin.\n\n" +
-    "Benim için aşağıdaki kriterlere göre " + o.count + " adet Almanca soru üret:\n\n" +
-    "• Seviye: " + o.level + "\n" +
-    "• Kategori: " + o.category + " — " + (o.subcat || "Genel") + "\n" +
-    "• Soru tipi: " + typeInstructions + "\n" +
-    "• Zorluk: " + diffText + "\n" +
-    examNote + "\n\n" +
-    "ÇIKTI FORMATI — Sadece geçerli bir JSON dizisi döndür, başka hiçbir şey yazma:\n\n" +
-    "[\n  " + formatNote + ",\n  ...\n]\n\n" +
-    "ZORUNLU KURALLAR:\n" +
-    "• Her soru objesinde mutlaka şu alanlar olsun: t, d (1-3), lv (\"" + o.level + "\"), tp (konu adı kısa İngilizce), q (soru metni), e (Türkçe açıklama)\n" +
-    "• tp alanı şu tarzda olsun: \"verben\", \"artikel\", \"perfekt\" vb. kısa slug\n" +
-    "• e alanı öğrenciye Türkçe açıklama — neden doğru, hangi kural\n" +
-    "• Sorular gerçekçi, günlük hayata yakın ve öğretici olsun\n" +
-    "• Açıklama alanları (e) mutlaka Türkçe olsun\n" +
-    "• JSON'dan önce veya sonra açıklama, yorum, markdown kod bloğu YAZMA — sadece [ ile başlayan JSON";
+    "Sen deneyimli bir Almanca dil ogretmenisin.\n\n" +
+    "GOREV: Asagidaki kriterlere gore tam olarak " + o.count + " adet Almanca soru uret.\n\n" +
+    "KRITERLER:\n" +
+    "- Seviye: " + o.level + "\n" +
+    "- Kategori: " + o.category + " / " + (o.subcat || "Genel") + "\n" +
+    "- Soru tipi: " + typeInstructions + "\n" +
+    "- Zorluk: " + diffText + "\n" +
+    (examNote ? examNote + "\n" : "") +
+    "\nCIKTI KURALLARI (kesinlikle uy):\n" +
+    "- Sadece gecerli bir JSON dizisi dondur\n" +
+    "- Cikti MUTLAKA [ ile baslayip ] ile bitmeli\n" +
+    "- JSON disinda hicbir sey yazma — aciklama, baslik, not, yorum YASAK\n" +
+    "- Markdown kod blogunu kullanma (``` yasakti)\n" +
+    "- Her obje arasindan virgul koy, son objeden sonra virgul koyma\n\n" +
+    "HER SORU OBJESINDE OLMASI ZORUNLU ALANLAR:\n" +
+    "- t: \"mcq\" veya \"fill\"\n" +
+    "- d: 1 (kolay), 2 (orta) veya 3 (zor)\n" +
+    "- lv: \"" + o.level + "\"\n" +
+    "- tp: konu slug, ornek: \"verben\", \"artikel\", \"perfekt\"\n" +
+    "- q: soru metni (fill tipinde ___ ile bosluk goster)\n" +
+    "- e: Turkce aciklama — neden bu cevap dogru\n" +
+    "- mcq icin: o (en az 4 secenekli dizi) + a (dogru secenek indeksi, 0'dan baslar)\n" +
+    "- fill icin: c (tek kelime cevap)\n\n" +
+    "ORNEK CIKTI (bu formati kullan):\n" +
+    "[\n" + exOut + "\n]"
 
   document.getElementById("gen-prompt-output").textContent = prompt;
   window._genPrompt = prompt;
