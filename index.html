@@ -2078,11 +2078,11 @@ function getSinavA1A2(lv) {
       soru: q.q, opts: q.o, ans: q.a, exp: q.e||""
     });
   });
-  // Bosluk bolumu: 5 fill soru (bosuk formatina cevir)
-  pool.filter(function(q){return q.t==="fill";}).slice(0,5).forEach(function(q){
+  // Bosluk bolumu: 5 fill soru
+  pool.filter(function(q){return q.t==="fill" && q.c;}).slice(0,5).forEach(function(q){
     result.push({
       bolum: "bosuk", puan: 4,
-      soru: q.q, cevap1: q.c, cevap2: "", exp: q.e||""
+      soru: q.q, cevap1: String(q.c).trim(), cevap2: "", exp: q.e||""
     });
   });
   return result;
@@ -2400,6 +2400,10 @@ function sinavNextQ() {
   } else {
     renderSinavSoru();
   }
+
+  // Bilinmeyen bolum tipi — bu soruyu atla, bir sonrakine gec
+  s.idx++;
+  renderSinavSoru();
 }
 
 function showSinavSonuc() {
@@ -2420,9 +2424,13 @@ function showSinavSonuc() {
     {key:"ceviri_tr2de", label:"Ceviri TR→DE", color:"var(--green)", max:15},
     {key:"ceviri_de2tr", label:"Ceviri DE→TR", color:"var(--green)", max:10},
     {key:"yazma", label:"Yazma", color:"#b854e0", max:20}
-  ].map(function(b){
+  ].filter(function(b){
+    // Sinav icinde hic sorusu olmayan bolumleri gizle
+    var m = bolumler[b.key]?bolumler[b.key].m:0;
+    return m > 0;
+  }).map(function(b){
     var k = bolumler[b.key]?bolumler[b.key].k:0;
-    var m = bolumler[b.key]?bolumler[b.key].m:b.max;
+    var m = bolumler[b.key]?bolumler[b.key].m:0;
     var bpct = m>0?Math.round((k/m)*100):0;
     return "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px'>"
       +"<span style='font-size:13px;min-width:140px'>"+b.label+"</span>"
